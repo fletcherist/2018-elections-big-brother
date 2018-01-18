@@ -1,1 +1,3 @@
-// models here
+const schemas = require('./mongooseScheme')
+
+console.log(schemas)
