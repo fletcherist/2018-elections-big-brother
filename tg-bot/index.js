@@ -1,18 +1,39 @@
 const Telegraf = require('telegraf')
 const RedisSession = require('telegraf-session-redis')
+const mongoose = require('mongoose')
+require('./models/mongooseScheme')
+
+const config = require('./config')
+
+const api = require('./api')
+
+const bot = new Telegraf(config.TELEGRAM_API_KEY)
 
 const {
-  TELEGRAM_API_KEY,
-  REDIS_SESSION_URL
-} = require('./config')
+  PLATFORMS,
+  REALTIME_VOTERS_TYPE,
+  ACTION_TYPES
+} = require('./constants')
 
-console.log(process.env)
+console.log(api)
 
-const bot = new Telegraf(TELEGRAM_API_KEY)
+api.users.findUserByTelegramId(32149807)
+  .then(console.log)
 
+/*
+ * Setting up MongoDB connection
+ */
+mongoose.Promise = Promise
+const connection = mongoose.connect(config.MONGODB_DATABASE_PATH, {
+  // useMongoClient: true
+})
+
+/*
+ * Setting up RedisDB connection
+ */
 const redisSession = new RedisSession({
   store: {
-    url: REDIS_SESSION_URL
+    url: config.REDIS_SESSION_URL
   }
 })
 bot.use(redisSession.middleware())
@@ -22,13 +43,39 @@ function incrementCounter(ctx) {
   ctx.session.counter++
 }
 
-const ACTION_TYPES = {
-  ACTION_TYPE_5_PEOPLE: 'ACTION_TYPE_5_PEOPLE',
-  ACTION_TYPE_10_PEOPLE: 'ACTION_TYPE_10_PEOPLE',
-  SEND_REQUEST_LOCATION: 'SEND_REQUEST_LOCATION',
+bot.command('start', async (ctx) => {
+  const userInfo = ctx.from
+  console.log(ctx)
+  /* check whether session exists */
+  if (ctx.session && ctx.session.status) {
+    /* user is already signed up */
 
-  LOCATION_RECEIVED: 'LOCATION_RECEIVED'
-}
+    return ctx.reply('registered user')
+  }
+
+  /*
+    check if user exists in mongodb
+  */
+  if (await api.users.isUserExistByTelegramId(userInfo.id)) {
+    /* exists, */
+    return ctx.reply('already registered')
+  }
+
+  /*
+    user is not signed up yet.
+    make a registration
+  */
+  console.log(userInfo)
+  await api.users.createTelegramUser({
+    id: userInfo.id,
+    first_name: userInfo.first_name,
+    last_name: userInfo.last_name,
+    username: userInfo.username,
+    isVerified: true /* @TODO: make verification function */
+  })
+
+  return ctx.reply('registration successfull')
+})
 
 bot.hears(ACTION_TYPES.LOCATION_RECEIVED, (ctx) => {
   ctx.reply('Спасибо! Замечательно')
