@@ -39,6 +39,16 @@ async function isUserExistByTelegramId(telegramId) {
   return false
 }
 
+async function updateTelegramUserLocation(telegramId, latitude, longitude) {
+  if (!latitude || !longitude) return false
+  const user = await findUserByTelegramId(telegramId)
+  user.location = user.location || {}
+  user.location.latitude = latitude
+  user.location.longitude = longitude
+  return await user.save()
+}
+
 module.exports.createTelegramUser = createTelegramUser
 module.exports.isUserExistByTelegramId = isUserExistByTelegramId
 module.exports.findUserByTelegramId = findUserByTelegramId
+module.exports.updateTelegramUserLocation = updateTelegramUserLocation

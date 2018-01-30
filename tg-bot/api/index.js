@@ -1,5 +1,5 @@
-const votersTracking = require('./votersTracking')
+const electorsAttendance = require('./electorsAttendance')
 const users = require('./users')
 
-module.exports.votersTracking = votersTracking
+module.exports.electorsAttendance = electorsAttendance
 module.exports.users = users

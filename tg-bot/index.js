@@ -1,13 +1,17 @@
 const Telegraf = require('telegraf')
 const RedisSession = require('telegraf-session-redis')
 const mongoose = require('mongoose')
+/* Initializing mongoose schemes */
 require('./models/mongooseScheme')
 
 const config = require('./config')
-
 const api = require('./api')
-
 const bot = new Telegraf(config.TELEGRAM_API_KEY)
+
+function getTime() {
+  var dateWithouthSecond = new Date()
+  return dateWithouthSecond.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
+}
 
 const {
   PLATFORMS,
@@ -16,9 +20,6 @@ const {
 } = require('./constants')
 
 console.log(api)
-
-api.users.findUserByTelegramId(32149807)
-  .then(console.log)
 
 /*
  * Setting up MongoDB connection
@@ -41,6 +42,37 @@ bot.use(redisSession.middleware())
 function incrementCounter(ctx) {
   ctx.session.counter = ctx.session.counter || 0
   ctx.session.counter++
+}
+
+function setLatestMessageID(ctx) {
+  ctx.session.latestMessageId = ctx.message.message_id
+}
+
+const app = {
+  MAIN_KEYBOARD: [
+    [
+      {
+        text: '➕ 1 человек 👤',
+        callback_data: ACTION_TYPES.REQUEST_UPDATE
+      }
+    ],
+    [
+      {
+        text: '➕ 5 человек 🔊',
+        callback_data: ACTION_TYPES.ACTION_TYPE_5_PEOPLE
+      },
+      {
+        text: '➕ 10 человек 📣',
+        callback_data: ACTION_TYPES.ACTION_TYPE_10_PEOPLE
+      }
+    ],
+    [
+      {
+        text: 'Обновить информацию',
+        callback_data: ACTION_TYPES.REQUEST_UPDATE
+      }
+    ]
+  ]
 }
 
 bot.command('start', async (ctx) => {
@@ -81,55 +113,76 @@ bot.hears(ACTION_TYPES.LOCATION_RECEIVED, (ctx) => {
   ctx.reply('Спасибо! Замечательно')
 })
 
-bot.on('message', (ctx) => {
+bot.on('message', async (ctx) => {
   incrementCounter(ctx)
+  setLatestMessageID(ctx)
+  /*
+   * Handle the case when user
+   * sends the location
+   */
+  let location = ctx.message.location
+  if (location) {
+    ctx.session.location = location || {}
+    ctx.session.location = location
 
-  if (ctx.message.location) {
-    ctx.session.location = ctx.session.location || {}
-    ctx.session.location = ctx.message.location
+    await api.users.updateTelegramUserLocation(
+      ctx.from.id,
+      location.latitude,
+      location.longitude
+    )
   }
-  console.log(ctx.session.location)
 
   ctx.reply(`hello world! ${ctx.session.counter}`, {
     parse_mode: 'markdown',
     reply_markup: {
-      inline_keyboard: [
-        [
-          {
-            text: '+5 человек',
-            callback_data: ACTION_TYPES.ACTION_TYPE_5_PEOPLE
-          },
-          {
-            text: '+10 человек',
-            callback_data: ACTION_TYPES.ACTION_TYPE_10_PEOPLE
-          },
-          {
-            text: 'Отправить геопозицию',
-            callback_data: ACTION_TYPES.SEND_REQUEST_LOCATION
-          }
-        ]
-      ]
-    },
+      inline_keyboard: app.MAIN_KEYBOARD
+    }
   })
 })
 
-bot.action(ACTION_TYPES.ACTION_TYPE_5_PEOPLE, (ctx) => {
-  console.log('5 people')
+function getLocalElectionsInfo() {
+  return [
+    `На текущий момент зарегистрировано:`,
+    `На вашем участке: 43 человека`,
+    `В вашем городе: 125 человек`,
+    'В области: 1235 человек',
+    `В стране: ${Math.floor(Math.random() * 1234)} человека`
+  ].join('\n')
+}
+
+bot.action(ACTION_TYPES.ACTION_TYPE_5_PEOPLE, async (ctx) => {
+  console.log(ctx)
+  ctx.answerCbQuery('+5 человек успешно посчитаны')
+  if (ctx.session.latestMessageId) {
+    const message = await ctx.editMessageText(getLocalElectionsInfo(), {
+      parse_mode: 'markdown',
+      reply_markup: {
+        inline_keyboard: app.MAIN_KEYBOARD
+      }
+    })
+    console.log('message', message)
+  }
 })
 
 bot.action(ACTION_TYPES.ACTION_TYPE_10_PEOPLE, (ctx) => {
+  ctx.answerCbQuery('+10 человек успешно посчитаны')
   console.log('10 people')
 })
 
+bot.action(ACTION_TYPES.REQUEST_UPDATE, (ctx) => {
+  ctx.answerCbQuery(`Обновлено, ${getTime()}`)
+})
+
 bot.action(ACTION_TYPES.SEND_REQUEST_LOCATION, (ctx) => {
-  ctx.reply('Пожалуйста, отправьте нам своё местоположение, чтобы мы могли понять, на каком вы сейчас участке.', {
+  ctx.reply('Пожалуйста, отправьте нам своё местоположение, чтобы мы могли определить ваш участок.', {
     reply_markup: {
       keyboard: [
         [{
           text: 'Отправить местоположение',
           request_location: true
         }]
-      ]
+      ],
+      resize_keyboard: true
     }
   })
 })

@@ -3,7 +3,7 @@ const Schema = mongoose.Schema
 
 const {
   PLATFORMS,
-  REALTIME_VOTERS_TYPE
+  ELECTORS_ATTENDANCE_TYPES
 } = require('../constants')
 
 const userSchema = new Schema({
@@ -30,22 +30,28 @@ const userSchema = new Schema({
   telegramId: String
 })
 
-const votersTrackingSchema = new Schema({
+const electorsAttendanceSchema = new Schema({
   /*
    * time voter came
    */
   timestamp: {type: Date, default: Date.now},
 
   /*
-   * @see REALTIME_VOTERS_TYPE
+   * @see ELECTORS_ATTENDANCE_TYPES
    */
   type: String,
+
+  /*
+   * Author user id
+   */
+  sourceUserId: String,
 
   /*
    * Geoposition of the even
    */
   location: {
-    
+    latitude: {type: Number, default: 0},
+    longitude: {type: Number, default: 0}
   },
 
   /*
@@ -56,4 +62,4 @@ const votersTrackingSchema = new Schema({
 })
 
 mongoose.model('User', userSchema)
-mongoose.model('VotersTracking', votersTrackingSchema)
+mongoose.model('ElectorsAttendance', electorsAttendanceSchema)
