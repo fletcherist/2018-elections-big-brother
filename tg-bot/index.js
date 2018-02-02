@@ -14,8 +14,7 @@ function getTime() {
 }
 
 const {
-  PLATFORMS,
-  REALTIME_VOTERS_TYPE,
+  ELECTORS_ATTENDANCE_CALLBACK_REPLY,
   ACTION_TYPES
 } = require('./constants')
 
@@ -25,9 +24,7 @@ console.log(api)
  * Setting up MongoDB connection
  */
 mongoose.Promise = Promise
-const connection = mongoose.connect(config.MONGODB_DATABASE_PATH, {
-  // useMongoClient: true
-})
+const connection = mongoose.connect(config.MONGODB_DATABASE_PATH)
 
 /*
  * Setting up RedisDB connection
@@ -53,17 +50,17 @@ const app = {
     [
       {
         text: '➕ 1 человек 👤',
-        callback_data: ACTION_TYPES.REQUEST_UPDATE
+        callback_data: ACTION_TYPES.COUNT_1_ELECTOR
       }
     ],
     [
       {
         text: '➕ 5 человек 🔊',
-        callback_data: ACTION_TYPES.ACTION_TYPE_5_PEOPLE
+        callback_data: ACTION_TYPES.COUNT_5_ELECTORS
       },
       {
         text: '➕ 10 человек 📣',
-        callback_data: ACTION_TYPES.ACTION_TYPE_10_PEOPLE
+        callback_data: ACTION_TYPES.COUNT_10_ELECTORS
       }
     ],
     [
@@ -150,23 +147,39 @@ function getLocalElectionsInfo() {
   ].join('\n')
 }
 
-bot.action(ACTION_TYPES.ACTION_TYPE_5_PEOPLE, async (ctx) => {
-  console.log(ctx)
-  ctx.answerCbQuery('+5 человек успешно посчитаны')
+async function handleNewElectorsAttendance(type, ctx) {
+  /* push electors attendance into blockchain */
+  try {
+    const userId = ctx.from.id
+    await api.electorsAttendance.createElectorsAttendanceByTelegram(
+      userId, type
+    )
+  } catch (error) {
+    ctx.answerCbQuery('Ошибка при подсчёте')
+  }
+
+  ctx.answerCbQuery(ELECTORS_ATTENDANCE_CALLBACK_REPLY[type])
+
   if (ctx.session.latestMessageId) {
-    const message = await ctx.editMessageText(getLocalElectionsInfo(), {
+    await ctx.editMessageText(getLocalElectionsInfo(), {
       parse_mode: 'markdown',
       reply_markup: {
         inline_keyboard: app.MAIN_KEYBOARD
       }
     })
-    console.log('message', message)
   }
+}
+
+bot.action(ACTION_TYPES.COUNT_1_ELECTOR, async (ctx) => {
+  return await handleNewElectorsAttendance(ACTION_TYPES.COUNT_1_ELECTOR, ctx)
 })
 
-bot.action(ACTION_TYPES.ACTION_TYPE_10_PEOPLE, (ctx) => {
-  ctx.answerCbQuery('+10 человек успешно посчитаны')
-  console.log('10 people')
+bot.action(ACTION_TYPES.COUNT_5_ELECTORS, async (ctx) => {
+  return await handleNewElectorsAttendance(ACTION_TYPES.COUNT_5_ELECTORS, ctx)
+})
+
+bot.action(ACTION_TYPES.COUNT_10_ELECTORS, async (ctx) => {
+  return await handleNewElectorsAttendance(ACTION_TYPES.COUNT_10_ELECTORS, ctx)
 })
 
 bot.action(ACTION_TYPES.REQUEST_UPDATE, (ctx) => {

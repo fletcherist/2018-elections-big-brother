@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 const ElectorsAttendance = mongoose.model('ElectorsAttendance')
 const crypto = require('crypto')
+const { findUserByTelegramId } = require('./users')
 const {
   ELECTORS_ATTENDANCE_TYPES
 } = require('../constants')
@@ -22,6 +23,27 @@ async function truncateElectorsAttendanceDB() {
 async function initializeElectorsAttendanceBlockchain() {
   await truncateElectorsAttendanceDB()
   return await createGenesisElectorsAttendanceBlock()
+}
+
+async function createElectorsAttendanceByTelegram(telegramUserId, type) {
+  if (!telegramUserId || !type) {
+    throw new Error('No telegram user id or type')
+  }
+  /* get user using telegram id */
+  const user = await findUserByTelegramId(telegramUserId)
+  if (!user) {
+    throw new Error('No user with that telegram user id in database')
+  }
+
+  const electorsAttendance =  new ElectorsAttendance()
+  electorsAttendance.type = type
+  electorsAttendance.location = {}
+  electorsAttendance.location.latitude = user.location.latitude
+  electorsAttendance.location.longitude = user.location.longitude
+  electorsAttendance.sourceUserId = user.id
+  electorsAttendance.previousHash = await getPreviousBlockHash()
+  electorsAttendance.hash = createElectorsAttendanceHash(electorsAttendance)
+  return await electorsAttendance.save()
 }
 
 async function createGenesisElectorsAttendanceBlock() {
@@ -48,6 +70,10 @@ async function getLatestElectorsAttendance() {
   return electorsAttendance[0]
 }
 
+async function getPreviousBlockHash() {
+  return (await getLatestElectorsAttendance()).hash
+}
+
 async function addNewElectorsAttendance() {
 
 }
@@ -59,3 +85,4 @@ getLatestElectorsAttendance().then(console.log)
 module.exports.addNewElectorsAttendance = addNewElectorsAttendance
 module.exports.getLatestElectorsAttendance = getLatestElectorsAttendance
 module.exports.createGenesisElectorsAttendanceBlock = createGenesisElectorsAttendanceBlock
+module.exports.createElectorsAttendanceByTelegram = createElectorsAttendanceByTelegram

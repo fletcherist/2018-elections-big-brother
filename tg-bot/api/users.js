@@ -8,9 +8,10 @@ async function createTelegramUser({
   last_name,
   username,
   id,
-  isVerified
+  isVerified,
+  verificationToken
 }) {
-  if (!first_name || !last_name || !username || !id || !isVerified) {
+  if (!id) {
     throw new Error('Cant create telegram user')
   }
 
@@ -21,8 +22,9 @@ async function createTelegramUser({
   const user = new User()
   user.platform = PLATFORMS.TELEGRAM
   user.isVerified = isVerified || false
+  user.verificationToken = verificationToken || ''
   user.telegramId = id
-  user.fullName = `${first_name} ${last_name}`
+  user.fullName = `${first_name || 'noFirstName'} ${last_name || 'noLastName'}`
 
   return await user.save()
 }

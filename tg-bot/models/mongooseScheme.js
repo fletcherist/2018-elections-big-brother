@@ -23,11 +23,17 @@ const userSchema = new Schema({
    * Is user verified or not
    */
   isVerified: {type: Boolean, default: false},
+  verificationToken: {type: String, default: ''},
 
   /*
    *
    */
-  telegramId: String
+  telegramId: String,
+
+  location: {
+    latitude: {type: Number, default: 0},
+    longitude: {type: Number, default: 0}
+  }
 })
 
 const electorsAttendanceSchema = new Schema({
@@ -61,5 +67,11 @@ const electorsAttendanceSchema = new Schema({
   previousHash: String
 })
 
+const globalStatisticsSchema = new Schema({
+  electorsCount: {type: Number, default: 0},
+  timestamp: {type: Date, default: Date.now}
+})
+
 mongoose.model('User', userSchema)
 mongoose.model('ElectorsAttendance', electorsAttendanceSchema)
+mongoose.model('GlobalStatistics', globalStatisticsSchema)
