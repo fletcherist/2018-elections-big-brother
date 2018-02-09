@@ -1,6 +1,10 @@
 const mongoose = require('mongoose')
 const User = mongoose.model('User')
 const { PLATFORMS } = require('../constants')
+const {
+  createPollingStation,
+  findNearestPollingStation
+} = require('./pollingStations')
 
 /* Create user based on Telegram Platform */
 async function createTelegramUser({
@@ -41,12 +45,36 @@ async function isUserExistByTelegramId(telegramId) {
   return false
 }
 
+async function attachTelegramUserPollingStation(telegramId) {
+  const user = await findUserByTelegramId(telegramId)
+  if (!user) return false
+  const { coordinates } = user.location
+  if (!coordinates) {
+    console.log('User has no coordinates')
+    return false
+  }
+  // Attach to already existed one
+  const nearestPollingStation = await findNearestPollingStation(coordinates[0], coordinates[1])
+  if (nearestPollingStation) {
+    user.pollingStationId = nearestPollingStation.id
+    return true
+  }
+  // Create new
+  const newPollingStation = await createPollingStation({
+    latitude: coordinates[0],
+    longitude: coordinates[1]
+  })
+
+  user.pollingStationId = newPollingStation.id
+  return true
+}
+
 async function updateTelegramUserLocation(telegramId, latitude, longitude) {
   if (!latitude || !longitude) return false
   const user = await findUserByTelegramId(telegramId)
   user.location = user.location || {}
-  user.location.latitude = latitude
-  user.location.longitude = longitude
+  user.location.type = 'Point'
+  user.location.coordinates = [latitude, longitude]
   return await user.save()
 }
 
@@ -54,3 +82,4 @@ module.exports.createTelegramUser = createTelegramUser
 module.exports.isUserExistByTelegramId = isUserExistByTelegramId
 module.exports.findUserByTelegramId = findUserByTelegramId
 module.exports.updateTelegramUserLocation = updateTelegramUserLocation
+module.exports.attachTelegramUserPollingStation = attachTelegramUserPollingStation

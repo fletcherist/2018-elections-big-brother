@@ -29,11 +29,17 @@ const userSchema = new Schema({
    *
    */
   telegramId: String,
-
+  /*
+   * GeoJSON Implementation
+   */
   location: {
-    latitude: {type: Number, default: 0},
-    longitude: {type: Number, default: 0}
-  }
+    type: {type: String},
+    coordinates: {
+      type: [Number]
+    }
+  },
+  pollingStationId: {type: String},
+  room: String
 })
 
 const electorsAttendanceSchema = new Schema({
@@ -53,11 +59,13 @@ const electorsAttendanceSchema = new Schema({
   sourceUserId: String,
 
   /*
-   * Geoposition of the even
+   * GeoJSON Implementation
    */
   location: {
-    latitude: {type: Number, default: 0},
-    longitude: {type: Number, default: 0}
+    type: {type: String},
+    coordinates: {
+      type: [Number]
+    }
   },
 
   /*
@@ -72,6 +80,22 @@ const globalStatisticsSchema = new Schema({
   timestamp: {type: Date, default: Date.now}
 })
 
+const pollingStationSchema = new Schema({
+  name: {type: String, default: ''},
+  location: {
+    type: {type: String},
+    coordinates: {
+      type: [Number]
+    }
+  },
+  city: {type: String, default: ''}
+})
+
+pollingStationSchema.index({ location: '2dsphere' })
+userSchema.index({ location: '2dsphere' })
+electorsAttendanceSchema.index({ location: '2dsphere' })
+
 mongoose.model('User', userSchema)
 mongoose.model('ElectorsAttendance', electorsAttendanceSchema)
 mongoose.model('GlobalStatistics', globalStatisticsSchema)
+mongoose.model('PollingStation', pollingStationSchema)

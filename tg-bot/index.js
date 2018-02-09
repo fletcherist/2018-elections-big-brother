@@ -15,6 +15,7 @@ function getTime() {
 
 const {
   ELECTORS_ATTENDANCE_CALLBACK_REPLY,
+  ELECTORS_ATTENDANCE_VALUES,
   ACTION_TYPES
 } = require('./constants')
 
@@ -153,6 +154,9 @@ async function handleNewElectorsAttendance(type, ctx) {
     const userId = ctx.from.id
     await api.electorsAttendance.createElectorsAttendanceByTelegram(
       userId, type
+    )
+    await api.globalStatistics.incrementElectorsAttendance(
+      ELECTORS_ATTENDANCE_VALUES[type]
     )
   } catch (error) {
     ctx.answerCbQuery('Ошибка при подсчёте')

@@ -38,8 +38,10 @@ async function createElectorsAttendanceByTelegram(telegramUserId, type) {
   const electorsAttendance =  new ElectorsAttendance()
   electorsAttendance.type = type
   electorsAttendance.location = {}
-  electorsAttendance.location.latitude = user.location.latitude
-  electorsAttendance.location.longitude = user.location.longitude
+
+  electorsAttendance.location.type = 'Point'
+  electorsAttendance.locaiton.coordinates = user.location.coordinates
+  
   electorsAttendance.sourceUserId = user.id
   electorsAttendance.previousHash = await getPreviousBlockHash()
   electorsAttendance.hash = createElectorsAttendanceHash(electorsAttendance)
@@ -57,8 +59,10 @@ async function createGenesisElectorsAttendanceBlock() {
   const electorsAttendance = new ElectorsAttendance()
   electorsAttendance.type = ELECTORS_ATTENDANCE_TYPES.GENESIS_BLOCK
   electorsAttendance.location = {}
-  electorsAttendance.location.latitude = 0
-  electorsAttendance.location.longitude = 0
+
+  electorsAttendance.location.type = 'Point'
+  electorsAttendance.location.coordinates = [0, 0]
+
   electorsAttendance.sourceUserId = 0
   electorsAttendance.previousHash = 0
   electorsAttendance.hash = createElectorsAttendanceHash(electorsAttendance)
