@@ -88,7 +88,8 @@ const pollingStationSchema = new Schema({
       type: [Number]
     }
   },
-  city: {type: String, default: ''}
+  city: {type: String, default: ''},
+  electorsCount: {type: Number, default: 0}
 })
 
 pollingStationSchema.index({ location: '2dsphere' })

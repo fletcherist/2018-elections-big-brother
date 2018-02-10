@@ -8,10 +8,7 @@ const config = require('./config')
 const api = require('./api')
 const bot = new Telegraf(config.TELEGRAM_API_KEY)
 
-function getTime() {
-  var dateWithouthSecond = new Date()
-  return dateWithouthSecond.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
-}
+const utils = require('./utils')
 
 const {
   ELECTORS_ATTENDANCE_CALLBACK_REPLY,
@@ -152,6 +149,9 @@ async function handleNewElectorsAttendance(type, ctx) {
   /* push electors attendance into blockchain */
   try {
     const userId = ctx.from.id
+    const telegramUser = await api.users.findUserByTelegramId(userId)
+    console.log('telegramUser', telegramUser)
+
     await api.electorsAttendance.createElectorsAttendanceByTelegram(
       userId, type
     )
@@ -187,7 +187,7 @@ bot.action(ACTION_TYPES.COUNT_10_ELECTORS, async (ctx) => {
 })
 
 bot.action(ACTION_TYPES.REQUEST_UPDATE, (ctx) => {
-  ctx.answerCbQuery(`Обновлено, ${getTime()}`)
+  ctx.answerCbQuery(`Обновлено, ${utils.getTime()}`)
 })
 
 bot.action(ACTION_TYPES.SEND_REQUEST_LOCATION, (ctx) => {

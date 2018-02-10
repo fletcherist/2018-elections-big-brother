@@ -46,7 +46,25 @@ async function createPollingStation({
   return pollingStation
 }
 
+async function getElectorsCountOnPollingStation(pollingStationId) {
+  const pollingStation = await PollingStation.findById(pollingStationId)
+  return pollingStation.electorsCount
+}
+async function setElectorsCountOnPollingStation(pollingStationId, value) {
+  const pollingStation = await PollingStation.findById(pollingStationId)
+  pollingStation.electorsCount = value
+  return await pollingStation.save()
+}
+async function incrementElectorsCountOnPollingStation(pollingStationId, value) {
+  const pollingStation = await PollingStation.findById(pollingStationId)
+  pollingStation.electorsCount = pollingStation.electorsCount + value
+  return await pollingStation.save()
+}
+
 module.exports.createPollingStation = createPollingStation
 module.exports.findPollingStationsByCoordinates = findPollingStationsByCoordinates
 module.exports.findNearestPollingStation = findNearestPollingStation
 module.exports.isPollingStationExistNear = isPollingStationExistNear
+module.exports.getElectorsCountOnPollingStation = getElectorsCountOnPollingStation
+module.exports.setElectorsCountOnPollingStation = setElectorsCountOnPollingStation
+module.exports.incrementElectorsCountOnPollingStation = incrementElectorsCountOnPollingStation

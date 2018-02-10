@@ -35,13 +35,13 @@ async function createElectorsAttendanceByTelegram(telegramUserId, type) {
     throw new Error('No user with that telegram user id in database')
   }
 
-  const electorsAttendance =  new ElectorsAttendance()
+  const electorsAttendance = new ElectorsAttendance()
   electorsAttendance.type = type
   electorsAttendance.location = {}
 
   electorsAttendance.location.type = 'Point'
   electorsAttendance.locaiton.coordinates = user.location.coordinates
-  
+
   electorsAttendance.sourceUserId = user.id
   electorsAttendance.previousHash = await getPreviousBlockHash()
   electorsAttendance.hash = createElectorsAttendanceHash(electorsAttendance)
