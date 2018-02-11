@@ -39,8 +39,7 @@ async function createElectorsAttendanceByTelegram(telegramUserId, type) {
   electorsAttendance.type = type
   electorsAttendance.location = {}
 
-  electorsAttendance.location.type = 'Point'
-  electorsAttendance.locaiton.coordinates = user.location.coordinates
+  electorsAttendance.pollingStationId = user.pollingStationId
 
   electorsAttendance.sourceUserId = user.id
   electorsAttendance.previousHash = await getPreviousBlockHash()

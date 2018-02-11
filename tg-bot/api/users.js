@@ -57,7 +57,8 @@ async function attachTelegramUserPollingStation(telegramId) {
   const nearestPollingStation = await findNearestPollingStation(coordinates[0], coordinates[1])
   if (nearestPollingStation) {
     user.pollingStationId = nearestPollingStation.id
-    return true
+    await user.save()
+    return user.pollingStationId
   }
   // Create new
   const newPollingStation = await createPollingStation({
@@ -66,7 +67,8 @@ async function attachTelegramUserPollingStation(telegramId) {
   })
 
   user.pollingStationId = newPollingStation.id
-  return true
+  await user.save()
+  return user.pollingStationId
 }
 
 async function updateTelegramUserLocation(telegramId, latitude, longitude) {
@@ -78,8 +80,13 @@ async function updateTelegramUserLocation(telegramId, latitude, longitude) {
   return await user.save()
 }
 
+async function verifyTelegramUser(telegramId, verificationToken) {
+
+}
+
 module.exports.createTelegramUser = createTelegramUser
 module.exports.isUserExistByTelegramId = isUserExistByTelegramId
 module.exports.findUserByTelegramId = findUserByTelegramId
 module.exports.updateTelegramUserLocation = updateTelegramUserLocation
 module.exports.attachTelegramUserPollingStation = attachTelegramUserPollingStation
+module.exports.verifyTelegramUser = verifyTelegramUser

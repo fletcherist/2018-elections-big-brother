@@ -2,8 +2,7 @@ const mongoose = require('mongoose')
 const Schema = mongoose.Schema
 
 const {
-  PLATFORMS,
-  ELECTORS_ATTENDANCE_TYPES
+  PLATFORMS
 } = require('../constants')
 
 const userSchema = new Schema({
@@ -58,15 +57,7 @@ const electorsAttendanceSchema = new Schema({
    */
   sourceUserId: String,
 
-  /*
-   * GeoJSON Implementation
-   */
-  location: {
-    type: {type: String},
-    coordinates: {
-      type: [Number]
-    }
-  },
+  pollingStationId: {type: String},
 
   /*
    * For blockchain

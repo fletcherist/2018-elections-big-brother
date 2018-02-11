@@ -23,7 +23,9 @@ console.log(api)
 
  setlocation - Я пришёл на участок
  getmainmenu - Главное меню
-
+ me - Мой профиль
+ aboutverification - О верификации пользователей
+ verifyme - Верифицируйте меня
  */
 
 /*
@@ -88,6 +90,8 @@ bot.command('start', async (ctx) => {
     return ctx.reply('registered user')
   }
 
+  const [startCommand, verificationCode] = ctx.message.text.split(' ')
+
   /*
     check if user exists in mongodb
   */
@@ -139,8 +143,51 @@ function botRenderMainMenu(ctx) {
   })
 }
 
+function botRenderUserProfile(ctx) {
+  ctx.reply([`статус: Неверифицирован* (подробнее: /aboutverification)`].join('\n'))
+}
+
+function botRenderAboutVerification(ctx) {
+  ctx.reply('Верификация наблюдателя — это способ нам понять, что вы считаете явку честно. Верифицированные пользователи получают приоритет при подсчёте явки (в том случае, если на участке несколько наблюдателей-счётчиков), а также имеют возможность верифицировать других пользователей.')
+}
+
+async function botRenderVerifyMe(ctx) {
+  const [verifyCommand, verificationCode] = ctx.message.text.split(' ')
+  try {
+    const userId = ctx.from.id
+    const telegramUser = await api.users.findUserByTelegramId(userId)
+
+    if (telegramUser.isVerified === true) {
+      return ctx.reply('Ваш аккаунт уже верифицирован. \nТеперь вы можете верифицировать ваших друзей. Подробнее /invitefriends')
+    }
+    console.log(telegramUser)
+  } catch (error) {
+    console.log(error)
+  }
+
+  /* user has no verification code */
+  if (!verificationCode) {
+    return ctx.reply([
+      `Для верификации аккаунта вам потребуется код.`,
+      `Получить его можно тут @fletcherist`,
+      `Пример: (/verifyme 806247045b49ebca8d10)`,
+      `Подробнее о верификации: /aboutverification`
+    ].join('\n'))
+  }
+
+  console.log(ctx.message.text)
+}
+
+function botRenderInviteFriends(ctx) {
+
+}
+
 bot.command('setlocation', botRequestLocation)
 bot.command('getmainmenu', botRenderMainMenu)
+bot.command('me', botRenderUserProfile)
+bot.command('aboutverification', botRenderAboutVerification)
+bot.command('verifyme', botRenderVerifyMe)
+bot.command('invitefriends', botRenderInviteFriends)
 
 bot.on('message', async (ctx) => {
   incrementCounter(ctx)
@@ -150,18 +197,21 @@ bot.on('message', async (ctx) => {
    * sends the location
    */
   let location = ctx.message.location
+  let telegramId = ctx.from.id
   if (location) {
     ctx.session.location = location || {}
     ctx.session.location = location
 
     await api.users.updateTelegramUserLocation(
-      ctx.from.id,
+      telegramId,
       location.latitude,
       location.longitude
     )
 
-    return ctx.reply(
-      )
+    const pollingStationId = await api.users.attachTelegramUserPollingStation(telegramId)
+    ctx.session.pollingStationId = pollingStationId
+
+    return ctx.reply('Ваш аккаунт успешно привязан к избирательному участку. Теперь вы можете начинать считать явку /getmainmenu')
   }
 
   return botRenderMainMenu(ctx)
@@ -180,8 +230,6 @@ async function handleNewElectorsAttendance(type, ctx) {
   /* push electors attendance into blockchain */
   try {
     const userId = ctx.from.id
-    const telegramUser = await api.users.findUserByTelegramId(userId)
-    console.log('telegramUser', telegramUser)
 
     await api.electorsAttendance.createElectorsAttendanceByTelegram(
       userId, type
@@ -189,9 +237,14 @@ async function handleNewElectorsAttendance(type, ctx) {
     await api.globalStatistics.incrementElectorsAttendance(
       ELECTORS_ATTENDANCE_VALUES[type]
     )
+    if (ctx.session.pollingStationId) {
+      await api.pollingStations.incrementElectorsCountOnPollingStation(
+        ctx.session.pollingStationId, ELECTORS_ATTENDANCE_VALUES[type]
+      )
+    }
   } catch (error) {
-    console.log(error)
     ctx.answerCbQuery('Ошибка при подсчёте')
+    throw new Error(error)
   }
 
   ctx.answerCbQuery(ELECTORS_ATTENDANCE_CALLBACK_REPLY[type])

@@ -7,7 +7,9 @@ async function generateVerificationToken() {
     token: generateToken('1234567890abcdef', 20),
     isUsed: false
   })
+
   await verificationToken.save()
+  console.log('verification token has been created')
 }
 
 async function connectTokenWithUser(token, userId) {
