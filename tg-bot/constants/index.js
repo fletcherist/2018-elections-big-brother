@@ -27,6 +27,10 @@ const ACTION_TYPES = {
   REQUEST_UPDATE: 'REQUEST_UPDATE'
 }
 
+const BOT_TEXT = {
+  REQUEST_LOCATION_MESSAGE: 'Пожалуйста, отправьте нам своё местоположение, чтобы мы могли определить ваш участок.'
+}
+
 const ELECTORS_ATTENDANCE_CALLBACK_REPLY = {
   [ACTION_TYPES.COUNT_1_ELECTOR]: '+1 человек успешно посчитан',
   [ACTION_TYPES.COUNT_5_ELECTORS]: '+5 человек успешно посчитаны',
@@ -43,3 +47,4 @@ module.exports.PLATFORMS = PLATFORMS
 module.exports.ACTION_TYPES = ACTION_TYPES
 module.exports.ELECTORS_ATTENDANCE_CALLBACK_REPLY = ELECTORS_ATTENDANCE_CALLBACK_REPLY
 module.exports.ELECTORS_ATTENDANCE_VALUES = ELECTORS_ATTENDANCE_VALUES
+module.exports.BOT_TEXT = BOT_TEXT

@@ -92,6 +92,12 @@ const pollingStationSchema = new Schema({
   electorsCount: {type: Number, default: 0}
 })
 
+const verificationTokenSchema = new Schema({
+  token: String,
+  isUsed: {type: Boolean, default: false},
+  connectedUserId: {type: String}
+})
+
 pollingStationSchema.index({ location: '2dsphere' })
 userSchema.index({ location: '2dsphere' })
 electorsAttendanceSchema.index({ location: '2dsphere' })
@@ -100,3 +106,4 @@ mongoose.model('User', userSchema)
 mongoose.model('ElectorsAttendance', electorsAttendanceSchema)
 mongoose.model('GlobalStatistics', globalStatisticsSchema)
 mongoose.model('PollingStation', pollingStationSchema)
+mongoose.model('VerificationToken', verificationTokenSchema)

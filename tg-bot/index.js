@@ -13,10 +13,18 @@ const utils = require('./utils')
 const {
   ELECTORS_ATTENDANCE_CALLBACK_REPLY,
   ELECTORS_ATTENDANCE_VALUES,
-  ACTION_TYPES
+  ACTION_TYPES,
+  BOT_TEXT
 } = require('./constants')
 
 console.log(api)
+
+/* BOT COMMANDS
+
+ setlocation - Я пришёл на участок
+ getmainmenu - Главное меню
+
+ */
 
 /*
  * Setting up MongoDB connection
@@ -108,6 +116,32 @@ bot.hears(ACTION_TYPES.LOCATION_RECEIVED, (ctx) => {
   ctx.reply('Спасибо! Замечательно')
 })
 
+function botRequestLocation(ctx) {
+  ctx.reply(BOT_TEXT.REQUEST_LOCATION_MESSAGE, {
+    reply_markup: {
+      keyboard: [
+        [{
+          text: 'Отправить местоположение',
+          request_location: true
+        }]
+      ],
+      resize_keyboard: true
+    }
+  })
+}
+
+function botRenderMainMenu(ctx) {
+  ctx.reply(`hello world! ${ctx.session.counter}`, {
+    parse_mode: 'markdown',
+    reply_markup: {
+      inline_keyboard: app.MAIN_KEYBOARD
+    }
+  })
+}
+
+bot.command('setlocation', botRequestLocation)
+bot.command('getmainmenu', botRenderMainMenu)
+
 bot.on('message', async (ctx) => {
   incrementCounter(ctx)
   setLatestMessageID(ctx)
@@ -125,14 +159,12 @@ bot.on('message', async (ctx) => {
       location.latitude,
       location.longitude
     )
+
+    return ctx.reply(
+      )
   }
 
-  ctx.reply(`hello world! ${ctx.session.counter}`, {
-    parse_mode: 'markdown',
-    reply_markup: {
-      inline_keyboard: app.MAIN_KEYBOARD
-    }
-  })
+  return botRenderMainMenu(ctx)
 })
 
 function getLocalElectionsInfo() {
@@ -158,6 +190,7 @@ async function handleNewElectorsAttendance(type, ctx) {
       ELECTORS_ATTENDANCE_VALUES[type]
     )
   } catch (error) {
+    console.log(error)
     ctx.answerCbQuery('Ошибка при подсчёте')
   }
 
@@ -189,19 +222,7 @@ bot.action(ACTION_TYPES.REQUEST_UPDATE, (ctx) => {
   ctx.answerCbQuery(`Обновлено, ${utils.getTime()}`)
 })
 
-bot.action(ACTION_TYPES.SEND_REQUEST_LOCATION, (ctx) => {
-  ctx.reply('Пожалуйста, отправьте нам своё местоположение, чтобы мы могли определить ваш участок.', {
-    reply_markup: {
-      keyboard: [
-        [{
-          text: 'Отправить местоположение',
-          request_location: true
-        }]
-      ],
-      resize_keyboard: true
-    }
-  })
-})
+bot.action(ACTION_TYPES.SEND_REQUEST_LOCATION, botRequestLocation)
 
 bot.on('callback_query', (ctx) => {
   console.log(ctx)
