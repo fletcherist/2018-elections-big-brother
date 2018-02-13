@@ -84,7 +84,8 @@ const pollingStationSchema = new Schema({
   city: {type: String, default: ''},
   electorsCount: {type: Number, default: 0},
   formattedAdress: {type: String},
-  zipcode: {type: String}
+  zipcode: {type: String},
+  sourceCityId: {type: String}
 })
 
 const verificationTokenSchema = new Schema({
@@ -93,12 +94,25 @@ const verificationTokenSchema = new Schema({
   connectedUserId: {type: String}
 })
 
+const citySchema = new Schema({
+  name: String,
+  electorsCount: {type: Number, default: 0},
+  location: {
+    type: {type: String},
+    coordinates: {
+      type: [Number]
+    }
+  }
+})
+
 pollingStationSchema.index({ location: '2dsphere' })
 userSchema.index({ location: '2dsphere' })
 electorsAttendanceSchema.index({ location: '2dsphere' })
+citySchema.index({ location: '2dsphere' })
 
 mongoose.model('User', userSchema)
 mongoose.model('ElectorsAttendance', electorsAttendanceSchema)
 mongoose.model('GlobalStatistics', globalStatisticsSchema)
 mongoose.model('PollingStation', pollingStationSchema)
 mongoose.model('VerificationToken', verificationTokenSchema)
+mongoose.model('City', citySchema)

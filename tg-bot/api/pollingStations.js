@@ -2,6 +2,9 @@ const mongoose = require('mongoose')
 const PollingStation = mongoose.model('PollingStation')
 const { reverseGeocoding } = require('./geocoding')
 
+const citiesApi = require('./cities')
+const { findCityByName, createCity } = require('./cities')
+
 async function getPollingStations(limit = 100) {
   const pollingStations = await PollingStation.find({}).limit(limit)
   return pollingStations
@@ -64,6 +67,19 @@ async function createPollingStation({
     pollingStation.formattedAdress = geoinfo.formattedAdress
     pollingStation.zipcode = geoinfo.zipcode
     pollingStation.city = geoinfo.city
+
+    // Find already existed city or create one
+    // and attach it to the polling station
+    let city = await findCityByName(geoinfo.city)
+    if (!city) {
+      city = await createCity({
+        name: geoinfo.city,
+        latitude: latitude,
+        longitude: longitude
+      })
+    }
+    pollingStation.sourceCityId = city.id
+
     await pollingStation.save()
     return pollingStation
   } catch (error) {
@@ -85,6 +101,9 @@ async function incrementElectorsCountOnPollingStation(pollingStationId, value) {
   console.log(pollingStationId, value)
   const pollingStation = await PollingStation.findById(pollingStationId)
   pollingStation.electorsCount = pollingStation.electorsCount + value
+
+  // increment electors count on city attached to this polling station
+  await citiesApi.incrementElectorsCountOnCity(pollingStation.sourceCityId, value)
   return await pollingStation.save()
 }
 
