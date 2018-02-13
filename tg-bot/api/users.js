@@ -5,15 +5,14 @@ const {
   createPollingStation,
   findNearestPollingStation
 } = require('./pollingStations')
+const { connectTokenWithUser } = require('./verificationTokens')
 
 /* Create user based on Telegram Platform */
 async function createTelegramUser({
   first_name,
   last_name,
   username,
-  id,
-  isVerified,
-  verificationToken
+  id
 }) {
   if (!id) {
     throw new Error('Cant create telegram user')
@@ -25,8 +24,6 @@ async function createTelegramUser({
 
   const user = new User()
   user.platform = PLATFORMS.TELEGRAM
-  user.isVerified = isVerified || false
-  user.verificationToken = verificationToken || ''
   user.telegramId = id
   user.fullName = `${first_name || 'noFirstName'} ${last_name || 'noLastName'}`
 
@@ -74,14 +71,29 @@ async function attachTelegramUserPollingStation(telegramId) {
 async function updateTelegramUserLocation(telegramId, latitude, longitude) {
   if (!latitude || !longitude) return false
   const user = await findUserByTelegramId(telegramId)
+  if (!user) {
+    return false
+  }
   user.location = user.location || {}
   user.location.type = 'Point'
   user.location.coordinates = [latitude, longitude]
+  user.isLocationSet = true
   return await user.save()
 }
 
-async function verifyTelegramUser(telegramId, verificationToken) {
-
+async function verifyTelegramUser(verificationToken, telegramId) {
+  try {
+    const user = await findUserByTelegramId(telegramId)
+    if (!user) return false
+    await connectTokenWithUser(verificationToken, telegramId)
+    user.isVerified = true
+    user.verificationToken = verificationToken
+    await user.save()
+    return true
+  } catch (error) {
+    console.log(error)
+    return false
+  }
 }
 
 module.exports.createTelegramUser = createTelegramUser

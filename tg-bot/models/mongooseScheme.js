@@ -32,11 +32,13 @@ const userSchema = new Schema({
    * GeoJSON Implementation
    */
   location: {
-    type: {type: String},
+    type: {type: String, default: 'Point'},
     coordinates: {
-      type: [Number]
+      type: [Number],
+      default: [0, 0]
     }
   },
+  isLocationSet: {type: Boolean, default: false},
   pollingStationId: {type: String},
   room: String
 })

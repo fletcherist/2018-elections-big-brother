@@ -2,6 +2,13 @@ const mongoose = require('mongoose')
 const VerificationToken = mongoose.model('VerificationToken')
 const generateToken = require('nanoid/generate')
 
+/*
+ example:
+ http://t.me/elections_2018bot?start=1671d43c8c91944f603f
+*/
+const TELEGRAM_BOT_URL = 'http://t.me/elections_2018bot'
+const generateAuthenticationLink = token => `${TELEGRAM_BOT_URL}?start=${token}`
+
 async function generateVerificationToken() {
   const verificationToken = new VerificationToken({
     token: generateToken('1234567890abcdef', 20),

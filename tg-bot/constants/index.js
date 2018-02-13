@@ -1,16 +1,15 @@
 const ELECTORS_ATTENDANCE_TYPES = {
   ELECTORS_CAME_1: 'ELECTORS_CAME_1',
-  ELECTORS_CAME_5: 'ELECTORS_CAME_5',
-  ELECTORS_CAME_10: 'ELECTORS_CAME_10',
+  ELECTORS_CAME_5: 'ELECTORS_CAME_2',
+  ELECTORS_CAME_10: 'ELECTORS_CAME_5',
   GENESIS_BLOCK: 'GENESIS_BLOCK'
 }
-
 
 /* increment values */
 const ELECTORS_ATTENDANCE_VALUES = {
   [ELECTORS_ATTENDANCE_TYPES.ELECTORS_CAME_1]: 1,
-  [ELECTORS_ATTENDANCE_TYPES.ELECTORS_CAME_5]: 5,
-  [ELECTORS_ATTENDANCE_TYPES.ELECTORS_CAME_10]: 10
+  [ELECTORS_ATTENDANCE_TYPES.ELECTORS_CAME_5]: 2,
+  [ELECTORS_ATTENDANCE_TYPES.ELECTORS_CAME_10]: 5
 }
 
 const PLATFORMS = {
@@ -23,18 +22,19 @@ const ACTION_TYPES = {
   COUNT_10_ELECTORS: ELECTORS_ATTENDANCE_TYPES.ELECTORS_CAME_10,
   SEND_REQUEST_LOCATION: 'SEND_REQUEST_LOCATION',
 
-  LOCATION_RECEIVED: 'LOCATION_RECEIVED',
-  REQUEST_UPDATE: 'REQUEST_UPDATE'
+  REQUEST_UPDATE: 'REQUEST_UPDATE',
+
+  GET_MAIN_MENU: 'GET_MAIN_MENU'
 }
 
 const BOT_TEXT = {
-  REQUEST_LOCATION_MESSAGE: 'Пожалуйста, отправьте нам своё местоположение, чтобы мы могли определить ваш участок.'
+  REQUEST_LOCATION_MESSAGE: '⭐️ Отлично! Здорово.\n\n🌎 Пожалуйста, отправьте нам своё местоположение, чтобы мы могли определить ваш участок.'
 }
 
 const ELECTORS_ATTENDANCE_CALLBACK_REPLY = {
   [ACTION_TYPES.COUNT_1_ELECTOR]: '+1 человек успешно посчитан',
-  [ACTION_TYPES.COUNT_5_ELECTORS]: '+5 человек успешно посчитаны',
-  [ACTION_TYPES.COUNT_10_ELECTORS]: '+10 человек успешно посчитаны'
+  [ACTION_TYPES.COUNT_5_ELECTORS]: '+2 человека успешно посчитаны',
+  [ACTION_TYPES.COUNT_10_ELECTORS]: '+5 человек успешно посчитаны'
 }
 
 module.exports = {

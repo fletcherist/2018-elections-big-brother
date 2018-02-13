@@ -56,6 +56,7 @@ async function setElectorsCountOnPollingStation(pollingStationId, value) {
   return await pollingStation.save()
 }
 async function incrementElectorsCountOnPollingStation(pollingStationId, value) {
+  console.log(pollingStationId, value)
   const pollingStation = await PollingStation.findById(pollingStationId)
   pollingStation.electorsCount = pollingStation.electorsCount + value
   return await pollingStation.save()
