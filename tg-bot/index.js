@@ -2,6 +2,8 @@ const Telegraf = require('telegraf')
 const RedisSession = require('telegraf-session-redis')
 const Stage = require('telegraf/stage')
 const Scene = require('telegraf/scenes/base')
+const Extra = require('telegraf/extra')
+const Markup = require('telegraf/markup')
 const mongoose = require('mongoose')
 /* Initializing mongoose schemes */
 require('./models/mongooseScheme')
@@ -11,6 +13,10 @@ const api = require('./api')
 const bot = new Telegraf(config.TELEGRAM_API_KEY)
 
 const utils = require('./utils')
+
+console.log(Markup.inlineKeyboard([
+  Markup.callbackButton('Pepsi', 'Pepsi')
+  ]))
 
 const {
   ELECTORS_ATTENDANCE_CALLBACK_REPLY,
@@ -47,38 +53,38 @@ const redisSession = new RedisSession({
   }
 })
 
-const reportViolation = new Scene('reportviolation')
+const reportScene = new Scene('reportviolation')
 const violationsMatch = {
   [ACTION_TYPES.VIOLATION_SELECT_CAROUSEL]: 'Карусель',
   [ACTION_TYPES.VIOLATION_SELECT_DELIVERY]: 'Подвоз',
   [ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL]: 'Меня просят уйти'
 }
 
-reportViolation.enter((ctx) => {
+reportScene.enter((ctx) => {
   ctx.answerCbQuery()
   ctx.session.violationType = null
   ctx.reply('🚨 Заметили нарушение или подозрительное действие? Выберите подходящее из списка. Прикрепите фотографию и оставьте комментарий. Самое интересное мы опубликуем в социальных сетях.', app.renderKeyboard(app.VIOLATIONS_MENU))
 })
-reportViolation.leave((ctx) => {
+reportScene.leave((ctx) => {
   ctx.session.violationType = null
   ctx.session.violationPhotoUrl = null
   ctx.session.violationMessage = null
   return botRenderMainMenu(ctx)
 })
-reportViolation.action(ACTION_TYPES.BACK, Stage.leave())
-reportViolation.action(ACTION_TYPES.CANCEL, Stage.leave())
-reportViolation.action(ACTION_TYPES.GET_MAIN_MENU, Stage.leave())
-reportViolation.action(ACTION_TYPES.VIOLATION_SELECT_CAROUSEL, ctx =>
+reportScene.action(ACTION_TYPES.BACK, Stage.leave())
+reportScene.action(ACTION_TYPES.CANCEL, Stage.leave())
+reportScene.action(ACTION_TYPES.GET_MAIN_MENU, Stage.leave())
+reportScene.action(ACTION_TYPES.VIOLATION_SELECT_CAROUSEL, ctx =>
   handleReportViolation(ctx, ACTION_TYPES.VIOLATION_SELECT_CAROUSEL)
 )
-reportViolation.action(ACTION_TYPES.VIOLATION_SELECT_DELIVERY, ctx =>
+reportScene.action(ACTION_TYPES.VIOLATION_SELECT_DELIVERY, ctx =>
   handleReportViolation(ctx, ACTION_TYPES.VIOLATION_SELECT_DELIVERY)
 )
-reportViolation.action(ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL, ctx =>
+reportScene.action(ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL, ctx =>
   handleReportViolation(ctx, ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL)
 )
 
-reportViolation.action(ACTION_TYPES.SEND_VIOLATION_REPORT, async (ctx) => {
+reportScene.action(ACTION_TYPES.SEND_VIOLATION_REPORT, async (ctx) => {
   ctx.answerCbQuery()
   if (!ctx.session.violationType) {
     return ctx.editMessageText('Вы не выбрали нарушение из списка', app.renderKeyboard(app.MAIN_KEYBOARD))
@@ -120,7 +126,7 @@ async function handleReportViolation(ctx, violationType) {
 }
 
 const getFullsizePhoto = message => message.photo[message.photo.length - 1].file_id
-reportViolation.on('photo', async (ctx) => {
+reportScene.on('photo', async (ctx) => {
   console.log('get some photo', ctx)
 
   if (!ctx.session.violationType) {
@@ -150,7 +156,7 @@ reportViolation.on('photo', async (ctx) => {
   }
 })
 
-reportViolation.on('message', ctx => {
+reportScene.on('message', ctx => {
   if (!ctx.session.violationType) {
     return ctx.reply('Прежде чем описывать нарушение, пожалуйста, выберите подходящее из списка', app.renderKeyboard(app.VIOLATIONS_MENU))
   }
@@ -162,7 +168,7 @@ reportViolation.on('message', ctx => {
 
 const stage = new Stage()
 
-stage.register(reportViolation)
+stage.register(reportScene)
 
 bot.use(redisSession.middleware())
 bot.use(stage.middleware())
@@ -179,86 +185,47 @@ function setLatestMessageID(ctx) {
 const app = {
   MAIN_KEYBOARD: [
     [
-      {
-        text: '➕ 1 человек 👤',
-        callback_data: ACTION_TYPES.COUNT_1_ELECTOR
-      }
+      Markup.callbackButton('➕ 1 человек 👤', ACTION_TYPES.COUNT_1_ELECTOR)
     ],
     [
-      {
-        text: '➕ 2 чел. 👫',
-        callback_data: ACTION_TYPES.COUNT_5_ELECTORS
-      },
-      {
-        text: '➕ 5 чел. 👪',
-        callback_data: ACTION_TYPES.COUNT_10_ELECTORS
-      }
+      Markup.callbackButton('➕ 2 чел. 👫', ACTION_TYPES.COUNT_5_ELECTORS),
+      Markup.callbackButton('➕ 5 чел. 👪', ACTION_TYPES.COUNT_10_ELECTORS)
     ],
     [
-      {
-        text: 'Обновить информацию',
-        callback_data: ACTION_TYPES.REQUEST_UPDATE
-      }
+      Markup.callbackButton('Обновить информацию', ACTION_TYPES.REQUEST_UPDATE)
     ],
     [
-      {
-        text: 'Сообщить о нарушении',
-        callback_data: ACTION_TYPES.REPORT_VIOLATION
-      }
+      Markup.callbackButton('Сообщить о нарушении', ACTION_TYPES.REPORT_VIOLATION)
     ]
   ],
   GO_TO_MAIN_MENU: [
     [
-      {
-        text: 'В главное меню',
-        callback_data: ACTION_TYPES.GET_MAIN_MENU
-      }
+      Markup.callbackButton('В главное меню', ACTION_TYPES.GET_MAIN_MENU)
     ]
   ],
   I_AM_ON_THE_POLLING_STATION: [
     [
-      {
-        text: 'Я на месте',
-        callback_data: ACTION_TYPES.SEND_REQUEST_LOCATION
-      }
+      Markup.callbackButton('Я на месте', ACTION_TYPES.SEND_REQUEST_LOCATION)
     ]
   ],
   VIOLATIONS_MENU: [
     [
-      {
-        text: '🎭 Карусель',
-        callback_data: ACTION_TYPES.VIOLATION_SELECT_CAROUSEL
-      },
-      {
-        text: '🚌 Подвоз',
-        callback_data: ACTION_TYPES.VIOLATION_SELECT_DELIVERY
-      }
+      Markup.callbackButton('🎭 Карусель', ACTION_TYPES.VIOLATION_SELECT_CAROUSEL),
+      Markup.callbackButton('🚌 Подвоз', ACTION_TYPES.VIOLATION_SELECT_DELIVERY)
     ],
     [
-      {
-        text: '🤐 Меня просят уйти',
-        callback_data: ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL
-      }
+      Markup.callbackButton('🤐 Меня просят уйти', ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL)
     ],
     [
-      {
-        text: '« Назад',
-        callback_data: ACTION_TYPES.BACK
-      }
+      Markup.callbackButton('« Назад', ACTION_TYPES.BACK)
     ]
   ],
   SEND_VIOLATION_REPORT: [
     [
-      {
-        text: '🔖 Зафиксировать нарушение',
-        callback_data: ACTION_TYPES.SEND_VIOLATION_REPORT
-      }
+      Markup.callbackButton('🔖 Зафиксировать нарушение', ACTION_TYPES.SEND_VIOLATION_REPORT)
     ],
     [
-      {
-        text: 'Отменить',
-        callback_data: ACTION_TYPES.CANCEL
-      }
+      Markup.callbackButton('Отменить', ACTION_TYPES.CANCEL)
     ]
   ],
   renderKeyboard: keyboard => ({
@@ -350,7 +317,6 @@ function botRenderGoToPollingStation(ctx) {
 }
 
 function botRenderMainMenu(ctx) {
-  ctx.answerCbQuery('Вы перешли в главное меню')
   if (!ctx.session.isLocationSet) {
     return botRenderGoToPollingStation(ctx)
   }
@@ -489,7 +455,6 @@ bot.action(ACTION_TYPES.REQUEST_UPDATE, async (ctx) => {
 bot.action(ACTION_TYPES.GET_MAIN_MENU, botRenderMainMenu)
 bot.action(ACTION_TYPES.SEND_REQUEST_LOCATION, botRequestLocation)
 bot.action(ACTION_TYPES.REPORT_VIOLATION, ctx => ctx.scene.enter('reportviolation'))
-
 
 bot.on('callback_query', (ctx) => {
   console.log(ctx)
