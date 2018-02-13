@@ -299,17 +299,13 @@ bot.command('start', async (ctx) => {
 })
 
 function botRequestLocation(ctx) {
-  ctx.reply(BOT_TEXT.REQUEST_LOCATION_MESSAGE, {
-    reply_markup: {
-      keyboard: [
-        [{
-          text: 'Отправить местоположение',
-          request_location: true
-        }]
-      ],
-      resize_keyboard: true
-    }
-  })
+  ctx.reply(BOT_TEXT.REQUEST_LOCATION_MESSAGE, Extra.markup(markup =>
+    markup
+      .resize()
+      .keyboard([
+        markup.locationRequestButton('Отправить местоположение')
+      ])
+  ))
 }
 
 function botRenderGoToPollingStation(ctx) {
