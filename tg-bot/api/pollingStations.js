@@ -1,9 +1,17 @@
 const mongoose = require('mongoose')
 const PollingStation = mongoose.model('PollingStation')
+const { reverseGeocoding } = require('./geocoding')
 
-async function getPollingStations(limit) {
-  
+async function getPollingStations(limit = 100) {
+  const pollingStations = await PollingStation.find({}).limit(limit)
+  return pollingStations
 }
+
+getPollingStations().then(async (pollingStations) => {
+  const { coordinates } = pollingStations[0].location
+  const geoinfo = await reverseGeocoding(coordinates[0], coordinates[1])
+  console.log(geoinfo)
+})
 
 async function findPollingStationsByCoordinates(latitude, longitude) {
   const pollingStations = await PollingStation.find({
@@ -28,6 +36,9 @@ async function isPollingStationExistNear(latitude, longitude) {
   if (!pollingStations) return false
   return true
 }
+
+
+
 async function createPollingStation({
   name, latitude, longitude, city
 }) {
@@ -47,7 +58,18 @@ async function createPollingStation({
 
   await pollingStation.save()
   console.log('New polling station has been created')
-  return pollingStation
+
+  try {
+    const geoinfo = await reverseGeocoding(latitude, longitude)
+    pollingStation.formattedAdress = geoinfo.formattedAdress
+    pollingStation.zipcode = geoinfo.zipcode
+    pollingStation.city = geoinfo.city
+    await pollingStation.save()
+    return pollingStation
+  } catch (error) {
+    console.error(error)
+    return pollingStation
+  }
 }
 
 async function getElectorsCountOnPollingStation(pollingStationId) {

@@ -82,7 +82,9 @@ const pollingStationSchema = new Schema({
     }
   },
   city: {type: String, default: ''},
-  electorsCount: {type: Number, default: 0}
+  electorsCount: {type: Number, default: 0},
+  formattedAdress: {type: String},
+  zipcode: {type: String}
 })
 
 const verificationTokenSchema = new Schema({
