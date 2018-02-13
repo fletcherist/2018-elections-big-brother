@@ -16,6 +16,11 @@ getPollingStations().then(async (pollingStations) => {
   console.log(geoinfo)
 })
 
+async function getPollingStationById(id) {
+  const pollingStation = await PollingStation.findById(id)
+  return pollingStation
+}
+
 async function findPollingStationsByCoordinates(latitude, longitude) {
   const pollingStations = await PollingStation.find({
     location: {
@@ -39,8 +44,6 @@ async function isPollingStationExistNear(latitude, longitude) {
   if (!pollingStations) return false
   return true
 }
-
-
 
 async function createPollingStation({
   name, latitude, longitude, city
@@ -114,3 +117,4 @@ module.exports.isPollingStationExistNear = isPollingStationExistNear
 module.exports.getElectorsCountOnPollingStation = getElectorsCountOnPollingStation
 module.exports.setElectorsCountOnPollingStation = setElectorsCountOnPollingStation
 module.exports.incrementElectorsCountOnPollingStation = incrementElectorsCountOnPollingStation
+module.exports.getPollingStationById = getPollingStationById

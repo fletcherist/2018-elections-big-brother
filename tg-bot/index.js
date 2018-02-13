@@ -253,12 +253,16 @@ bot.on('message', async (ctx) => {
 })
 
 async function getLocalElectionsInfo(ctx) {
-  const pollingStationId = ctx.session.pollingStationId
-  const pollingStationAttendace = await api.pollingStations.getElectorsCountOnPollingStation(pollingStationId)
+  const electorsAttendace = await api.users.getTelegramUserElectorsAttendance(ctx.from.id)
+
+  const {
+    pollingStationAttendance,
+    cityAttendance
+  } = electorsAttendace
   return [
     `👩‍🔬 На ${utils.getTime()} явка\n`,
-    `На вашем участке: ${pollingStationAttendace} человека`,
-    `В вашем городе: 1253 человека`
+    `На вашем участке: ${pollingStationAttendance} человека`,
+    `В вашем городе: ${cityAttendance} человека`
   ].join('\n')
 }
 

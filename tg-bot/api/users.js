@@ -3,9 +3,12 @@ const User = mongoose.model('User')
 const { PLATFORMS } = require('../constants')
 const {
   createPollingStation,
-  findNearestPollingStation
+  findNearestPollingStation,
+  getPollingStationById
 } = require('./pollingStations')
 const { connectTokenWithUser } = require('./verificationTokens')
+
+const { getElectorsCountOnCity } = require('./cities')
 
 /* Create user based on Telegram Platform */
 async function createTelegramUser({
@@ -96,9 +99,22 @@ async function verifyTelegramUser(verificationToken, telegramId) {
   }
 }
 
+async function getTelegramUserElectorsAttendance(telegramId) {
+  const user = await User.findOne({telegramId: telegramId})
+  if (!user) return null
+
+  const pollingStation = await getPollingStationById(user.pollingStationId)
+
+  return {
+    pollingStationAttendance: pollingStation.electorsCount,
+    cityAttendance: await getElectorsCountOnCity(pollingStation.sourceCityId)
+  }
+}
+
 module.exports.createTelegramUser = createTelegramUser
 module.exports.isUserExistByTelegramId = isUserExistByTelegramId
 module.exports.findUserByTelegramId = findUserByTelegramId
 module.exports.updateTelegramUserLocation = updateTelegramUserLocation
 module.exports.attachTelegramUserPollingStation = attachTelegramUserPollingStation
 module.exports.verifyTelegramUser = verifyTelegramUser
+module.exports.getTelegramUserElectorsAttendance = getTelegramUserElectorsAttendance
