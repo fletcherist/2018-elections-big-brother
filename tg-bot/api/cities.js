@@ -21,6 +21,10 @@ async function findCityByName(name) {
   return city || null
 }
 
+async function getCityById(id) {
+  return await City.findById(id)
+}
+
 async function incrementElectorsCountOnCity(cityId, incrementValue) {
   const city = await City.findById(cityId)
   if (!city) return false
@@ -38,3 +42,4 @@ module.exports.createCity = createCity
 module.exports.findCityByName = findCityByName
 module.exports.incrementElectorsCountOnCity = incrementElectorsCountOnCity
 module.exports.getElectorsCountOnCity = getElectorsCountOnCity
+module.exports.getCityById = getCityById

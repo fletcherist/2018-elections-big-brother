@@ -8,7 +8,7 @@ const {
 } = require('./pollingStations')
 const { connectTokenWithUser } = require('./verificationTokens')
 
-const { getElectorsCountOnCity } = require('./cities')
+const { getCityById } = require('./cities')
 
 /* Create user based on Telegram Platform */
 async function createTelegramUser({
@@ -99,15 +99,15 @@ async function verifyTelegramUser(verificationToken, telegramId) {
   }
 }
 
-async function getTelegramUserElectorsAttendance(telegramId) {
+async function getTelegramUserInfo(telegramId) {
   const user = await User.findOne({telegramId: telegramId})
   if (!user) return null
 
   const pollingStation = await getPollingStationById(user.pollingStationId)
 
   return {
-    pollingStationAttendance: pollingStation.electorsCount,
-    cityAttendance: await getElectorsCountOnCity(pollingStation.sourceCityId)
+    pollingStation: pollingStation,
+    city: await getCityById(pollingStation.sourceCityId)
   }
 }
 
@@ -117,4 +117,4 @@ module.exports.findUserByTelegramId = findUserByTelegramId
 module.exports.updateTelegramUserLocation = updateTelegramUserLocation
 module.exports.attachTelegramUserPollingStation = attachTelegramUserPollingStation
 module.exports.verifyTelegramUser = verifyTelegramUser
-module.exports.getTelegramUserElectorsAttendance = getTelegramUserElectorsAttendance
+module.exports.getTelegramUserInfo = getTelegramUserInfo

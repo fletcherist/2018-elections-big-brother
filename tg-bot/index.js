@@ -64,11 +64,11 @@ const app = {
     ],
     [
       {
-        text: '➕ 2 человека 👫',
+        text: '➕ 2 чел. 👫',
         callback_data: ACTION_TYPES.COUNT_5_ELECTORS
       },
       {
-        text: '➕ 5 человек 👪',
+        text: '➕ 5 чел. 👪',
         callback_data: ACTION_TYPES.COUNT_10_ELECTORS
       }
     ],
@@ -252,17 +252,19 @@ bot.on('message', async (ctx) => {
   return botRenderMainMenu(ctx)
 })
 
-async function getLocalElectionsInfo(ctx) {
-  const electorsAttendace = await api.users.getTelegramUserElectorsAttendance(ctx.from.id)
 
+const counterPeopleEnding = count =>
+  [count, utils.wordEnding(count, ['человек', 'человека', 'человек'])].join(' ')
+async function getLocalElectionsInfo(ctx) {
   const {
-    pollingStationAttendance,
-    cityAttendance
-  } = electorsAttendace
+    pollingStation,
+    city
+  } = await api.users.getTelegramUserInfo(ctx.from.id)
+
   return [
     `👩‍🔬 На ${utils.getTime()} явка\n`,
-    `На вашем участке: ${pollingStationAttendance} человека`,
-    `В вашем городе: ${cityAttendance} человека`
+    `На вашем участке: ${counterPeopleEnding(pollingStation.electorsCount)}`,
+    `В городе ${city.name}: ${counterPeopleEnding(city.electorsCount)}`
   ].join('\n')
 }
 
