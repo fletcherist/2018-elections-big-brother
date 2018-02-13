@@ -1,6 +1,10 @@
 const mongoose = require('mongoose')
 const PollingStation = mongoose.model('PollingStation')
 
+async function getPollingStations(limit) {
+  
+}
+
 async function findPollingStationsByCoordinates(latitude, longitude) {
   const pollingStations = await PollingStation.find({
     location: {

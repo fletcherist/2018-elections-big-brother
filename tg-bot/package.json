@@ -13,7 +13,7 @@
     "mongoose": "^5.0.0",
     "nanoid": "^1.0.1",
     "node-fetch": "^1.7.3",
-    "node-telegram-bot-api": "^0.29.0",
+    "node-geocoder": "^3.22.0",
     "telegraf": "^3.17.5",
     "telegraf-session-redis": "^5.0.0"
   },

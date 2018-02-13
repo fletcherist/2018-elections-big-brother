@@ -187,7 +187,7 @@ async function botRenderVerifyMe(ctx) {
     const telegramUser = await api.users.findUserByTelegramId(userId)
 
     if (telegramUser.isVerified === true) {
-      return ctx.reply('Ваш аккаунт уже верифицирован. \nТеперь вы можете верифицировать ваших друзей. Подробнее /invitefriends')
+      return ctx.reply(BOT_TEXT.ACCOUNT_ALREADY_VERIFIED)
     }
     console.log(telegramUser)
   } catch (error) {
