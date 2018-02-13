@@ -77,6 +77,12 @@ const app = {
         text: 'Обновить информацию',
         callback_data: ACTION_TYPES.REQUEST_UPDATE
       }
+    ],
+    [
+      {
+        text: 'Сообщить о нарушении',
+        callback_data: ACTION_TYPES.REPORT_VIOLATION
+      }
     ]
   ],
   GO_TO_MAIN_MENU: [
@@ -95,6 +101,30 @@ const app = {
       }
     ]
   ],
+  VIOLATIONS_MENU: [
+    [
+      {
+        text: '🎭 Карусель',
+        callback_data: ACTION_TYPES.VIOLATION_SELECT_CAROUSEL
+      },
+      {
+        text: '🚌 Подвоз',
+        callback_data: ACTION_TYPES.VIOLATION_SELECT_DELIVERY
+      }
+    ],
+    [
+      {
+        text: '📵 Меня просят уйти',
+        callback_data: ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL
+      }
+    ],
+    [
+      {
+        text: '« Назад',
+        callback_data: ACTION_TYPES.GET_MAIN_MENU
+      }
+    ]
+  ],
   renderKeyboard: keyboard => ({
     parse_mode: 'markdown',
     reply_markup: {
@@ -102,6 +132,43 @@ const app = {
     }
   })
 }
+
+bot.on('photo', async (ctx) => {
+  console.log('get some photo', ctx)
+
+  const getFullsizePhoto = message => message.photo[message.photo.length - 1].file_id
+
+  const comment = ctx.message.caption
+  const fileId = getFullsizePhoto(ctx.message)
+
+  const photoUrl = await ctx.telegram.getFileLink(fileId)
+  const result = await await api.imageUploader.uploadImageByURL(photoUrl)
+
+  
+  console.log(result)
+})
+
+bot.on('location', async (ctx) => {
+  console.log('get some location')
+  let location = ctx.message.location
+  let telegramId = ctx.from.id
+  if (location) {
+    ctx.session.location = location || {}
+    ctx.session.location = location
+
+    await api.users.updateTelegramUserLocation(
+      telegramId,
+      location.latitude,
+      location.longitude
+    )
+
+    const pollingStationId = await api.users.attachTelegramUserPollingStation(telegramId)
+    ctx.session.isLocationSet = true
+    ctx.session.pollingStationId = pollingStationId
+
+    return ctx.reply('Ваш аккаунт успешно привязан к избирательному участку. Теперь вы можете начинать считать явку /getmainmenu')
+  }
+})
 
 bot.command('start', async (ctx) => {
   const userInfo = ctx.from
@@ -211,6 +278,10 @@ function botRenderInviteFriends(ctx) {
 
 }
 
+function botRenderReportViolationMenu(ctx) {
+  ctx.reply('Заметили нарушение или подозрительное действие? Выберите подходящее из списка. Прикрепите фотографию и оставьте комментарий.', app.renderKeyboard(app.VIOLATIONS_MENU))
+}
+
 function botRenderHelp(ctx) {
   ctx.reply(BOT_TEXT.FAQ_MESSAGE, app.renderKeyboard(app.GO_TO_MAIN_MENU))
 }
@@ -230,28 +301,10 @@ bot.on('message', async (ctx) => {
    * Handle the case when user
    * sends the location
    */
-  let location = ctx.message.location
-  let telegramId = ctx.from.id
-  if (location) {
-    ctx.session.location = location || {}
-    ctx.session.location = location
 
-    await api.users.updateTelegramUserLocation(
-      telegramId,
-      location.latitude,
-      location.longitude
-    )
-
-    const pollingStationId = await api.users.attachTelegramUserPollingStation(telegramId)
-    ctx.session.isLocationSet = true
-    ctx.session.pollingStationId = pollingStationId
-
-    return ctx.reply('Ваш аккаунт успешно привязан к избирательному участку. Теперь вы можете начинать считать явку /getmainmenu')
-  }
 
   return botRenderMainMenu(ctx)
 })
-
 
 const counterPeopleEnding = count =>
   [count, utils.wordEnding(count, ['человек', 'человека', 'человек'])].join(' ')
@@ -314,6 +367,12 @@ bot.action(ACTION_TYPES.REQUEST_UPDATE, (ctx) => {
 
 bot.action(ACTION_TYPES.GET_MAIN_MENU, botRenderMainMenu)
 bot.action(ACTION_TYPES.SEND_REQUEST_LOCATION, botRequestLocation)
+bot.action(ACTION_TYPES.REPORT_VIOLATION, botRenderReportViolationMenu)
+
+// handle violation reports
+bot.action(ACTION_TYPES.VIOLATION_SELECT_CAROUSEL, ctx => {})
+bot.action(ACTION_TYPES.VIOLATION_SELECT_DELIVERY, ctx => {})
+bot.action(ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL, ctx => {})
 
 bot.on('callback_query', (ctx) => {
   console.log(ctx)

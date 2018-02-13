@@ -10,11 +10,11 @@ async function getPollingStations(limit = 100) {
   return pollingStations
 }
 
-getPollingStations().then(async (pollingStations) => {
-  const { coordinates } = pollingStations[0].location
-  const geoinfo = await reverseGeocoding(coordinates[0], coordinates[1])
-  console.log(geoinfo)
-})
+// getPollingStations().then(async (pollingStations) => {
+//   const { coordinates } = pollingStations[0].location
+//   const geoinfo = await reverseGeocoding(coordinates[0], coordinates[1])
+//   console.log(geoinfo)
+// })
 
 async function getPollingStationById(id) {
   const pollingStation = await PollingStation.findById(id)
