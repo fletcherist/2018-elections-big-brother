@@ -37,8 +37,11 @@ const ACTION_TYPES = {
   VIOLATION_SELECT_CAROUSEL: 'VIOLATION_SELECT_CAROUSEL',
   VIOLATION_SELECT_DELIVERY: 'VIOLATION_SELECT_DELIVERY',
   VIOLATION_SELECT_ILLEGAL_REMOVAL: 'VIOLATION_SELECT_ILLEGAL_REMOVAL',
+  SEND_VIOLATION_REPORT: 'SEND_VIOLATION_REPORT',
 
-  GET_MAIN_MENU: 'GET_MAIN_MENU'
+  GET_MAIN_MENU: 'GET_MAIN_MENU',
+  BACK: 'BACK',
+  CANCEL: 'CANCEL'
 }
 
 const BOT_TEXT = {
@@ -60,7 +63,7 @@ const BOT_TEXT = {
     '〽️ Мы проанализируем данные в режиме реального времени, а базу данных опубликуем в открытом доступе сразу после окончания голосования\n',
     '1️⃣ Для того, чтобы начать пользоваться ботом, в день выборов придите на любой избирательный участок в вашем городе и отметьтесь там (команда /setlocation )\n',
     '2️⃣ Далее перейдите в главное меню (команда /getmainmenu) и считайте всех, кто приходит голосовать на участок.',
-    '3️⃣ Для того, чтобы сообщить о замеченном нарушении или подозрительном событии, перейдите в меню нарушений (команда /getreportsmenu)\n',
+    '3️⃣ Для того, чтобы сообщить о замеченном нарушении или подозрительном событии, перейдите в меню нарушений (команда /reportviolation)\n',
     '4️⃣ Выберите нужное из списка и, если хотите, прикрепите фото (например, фото подвоза)\n',
     'Остались вопросы? Задайте их разработчику — @fletcherist'
   ].join('\n'),

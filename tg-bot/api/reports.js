@@ -1,16 +1,18 @@
 const mongoose = require('mongoose')
 const Report = mongoose.model('Report')
 const { REPORT_TYPES } = require('../constants')
+const { findUserByTelegramId } = require('./users')
 
 async function createReport({
   type,
-  fromUserId,
-  pollingStationId
+  telegramUserId,
 }) {
+  const user = await findUserByTelegramId(telegramUserId)
+  if (!user) return false
   const report = new Report({
     type: type,
-    fromUserId: fromUserId,
-    pollingStationId: pollingStationId
+    fromUserId: user.id,
+    pollingStationId: user.pollingStationId
   })
   return await report.save()
 }
@@ -19,15 +21,19 @@ async function findReportById(id) {
   return await Report.findById(id)
 }
 
-async function attachPhotoToReport(photo) {
-
+async function attachPhotoToReport(photoUrl, reportId) {
+  const report = await Report.findById(reportId)
+  report.photoUrl = photoUrl
+  return await report.save()
 }
 
-async function attachCommentToReport(commentText) {
-
+async function attachDescriptionToReport(textDescription, reportId) {
+  const report = await Report.findById(reportId)
+  report.description = textDescription
+  return await report.save()
 }
 
 module.exports.createReport = createReport
 module.exports.attachPhotoToReport = attachPhotoToReport
-module.exports.attachCommentToReport = attachCommentToReport
+module.exports.attachDescriptionToReport = attachDescriptionToReport
 module.exports.findReportById = findReportById

@@ -1,5 +1,7 @@
 const Telegraf = require('telegraf')
 const RedisSession = require('telegraf-session-redis')
+const Stage = require('telegraf/stage')
+const Scene = require('telegraf/scenes/base')
 const mongoose = require('mongoose')
 /* Initializing mongoose schemes */
 require('./models/mongooseScheme')
@@ -27,6 +29,7 @@ console.log(api)
  help - Помощь
  aboutverification - О верификации пользователей
  verifyme - Верифицируйте меня
+ reportviolation - Сообщить о нарушении
  */
 
 /*
@@ -43,7 +46,126 @@ const redisSession = new RedisSession({
     url: config.REDIS_SESSION_URL
   }
 })
+
+const reportViolation = new Scene('reportviolation')
+const violationsMatch = {
+  [ACTION_TYPES.VIOLATION_SELECT_CAROUSEL]: 'Карусель',
+  [ACTION_TYPES.VIOLATION_SELECT_DELIVERY]: 'Подвоз',
+  [ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL]: 'Меня просят уйти'
+}
+
+reportViolation.enter((ctx) => {
+  ctx.answerCbQuery()
+  ctx.session.violationType = null
+  ctx.reply('🚨 Заметили нарушение или подозрительное действие? Выберите подходящее из списка. Прикрепите фотографию и оставьте комментарий. Самое интересное мы опубликуем в социальных сетях.', app.renderKeyboard(app.VIOLATIONS_MENU))
+})
+reportViolation.leave((ctx) => {
+  ctx.session.violationType = null
+  ctx.session.violationPhotoUrl = null
+  ctx.session.violationMessage = null
+  return botRenderMainMenu(ctx)
+})
+reportViolation.action(ACTION_TYPES.BACK, Stage.leave())
+reportViolation.action(ACTION_TYPES.CANCEL, Stage.leave())
+reportViolation.action(ACTION_TYPES.GET_MAIN_MENU, Stage.leave())
+reportViolation.action(ACTION_TYPES.VIOLATION_SELECT_CAROUSEL, ctx =>
+  handleReportViolation(ctx, ACTION_TYPES.VIOLATION_SELECT_CAROUSEL)
+)
+reportViolation.action(ACTION_TYPES.VIOLATION_SELECT_DELIVERY, ctx =>
+  handleReportViolation(ctx, ACTION_TYPES.VIOLATION_SELECT_DELIVERY)
+)
+reportViolation.action(ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL, ctx =>
+  handleReportViolation(ctx, ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL)
+)
+
+reportViolation.action(ACTION_TYPES.SEND_VIOLATION_REPORT, async (ctx) => {
+  ctx.answerCbQuery()
+  if (!ctx.session.violationType) {
+    return ctx.editMessageText('Вы не выбрали нарушение из списка', app.renderKeyboard(app.MAIN_KEYBOARD))
+  }
+
+  // No text description of the violation report
+  if (!ctx.session.violationMessage) {
+    return ctx.editMessageText('❗️ Пожалуйста, в двух словах опишите, что произошло', app.renderKeyboard(app.SEND_VIOLATION_REPORT))
+  }
+
+  const report = await api.reports.createReport({
+    type: ctx.session.violationType,
+    telegramUserId: ctx.from.id
+  })
+  if (!report) {
+    return ctx.editMessageText(`🚫 Извините, ошибка. Нарушение «${violationsMatch[ctx.session.violationType]}» не было зафиксировано.`, app.renderKeyboard(app.GO_TO_MAIN_MENU))
+  }
+
+  await api.reports.attachDescriptionToReport(ctx.session.violationMessage, report.id)
+  if (ctx.session.violationPhotoUrl) {
+    await api.reports.attachPhotoToReport(ctx.session.violationPhotoUrl, report.id)
+  }
+
+  ctx.editMessageText(`✅ Нарушение «${violationsMatch[ctx.session.violationType]}» успешно зафиксировано. Спасибо, мы проанализируем его и опубликуем в ближайшее время.`, app.renderKeyboard(app.GO_TO_MAIN_MENU))
+})
+
+async function handleReportViolation(ctx, violationType) {
+  ctx.session.violationType = violationType
+  ctx.answerCbQuery()
+
+  if (ctx.session.latestMessageId) {
+    await ctx.editMessageText([
+      `Вы выбрали нарушение «${violationsMatch[violationType]}»\n`,
+      '1️⃣ В двух словах опишите в сообщении, что произошло.',
+      '2️⃣ Если сможете, сделайте фотографию и прикрепите её к нарушению.'
+    ].join('\n'),
+    app.renderKeyboard(app.SEND_VIOLATION_REPORT))
+  }
+}
+
+const getFullsizePhoto = message => message.photo[message.photo.length - 1].file_id
+reportViolation.on('photo', async (ctx) => {
+  console.log('get some photo', ctx)
+
+  if (!ctx.session.violationType) {
+    return ctx.editMessageText('Прежде чем отправлять фото нарушения, пожалуйста, выберите подходящее из списка', app.renderKeyboard(app.VIOLATIONS_MENU))
+  }
+
+  // Already attached photo
+  if (ctx.session.violationPhotoUrl) {
+    return ctx.reply('Вы уже прикрепили фотографию. Опишите в двух словах, что произошло?', app.renderKeyboard(app.SEND_VIOLATION_REPORT))
+  }
+
+  ctx.reply('🤖 Обрабатываю изображение...')
+
+  if (ctx.session.violationType) {
+    const fileId = getFullsizePhoto(ctx.message)
+
+    const photoUrl = await ctx.telegram.getFileLink(fileId)
+    const result = await await api.imageUploader.uploadImageByURL(photoUrl)
+    ctx.session.violationPhotoUrl = result.secure_url
+
+    if (ctx.message.caption) {
+      ctx.session.violationMessage = ctx.message.caption
+      ctx.reply('👍 Описание нарушения сохранёно.')
+    }
+
+    return ctx.reply('👍 Фотография нарушения успешно прикреплена', app.renderKeyboard(app.SEND_VIOLATION_REPORT))
+  }
+})
+
+reportViolation.on('message', ctx => {
+  if (!ctx.session.violationType) {
+    return ctx.reply('Прежде чем описывать нарушение, пожалуйста, выберите подходящее из списка', app.renderKeyboard(app.VIOLATIONS_MENU))
+  }
+
+  const message = ctx.message.text
+  ctx.session.violationMessage = message
+  ctx.reply('👍 Описание нарушения сохранёно. Прикрепите фотографию?', app.renderKeyboard(app.SEND_VIOLATION_REPORT))
+})
+
+const stage = new Stage()
+
+stage.register(reportViolation)
+
 bot.use(redisSession.middleware())
+bot.use(stage.middleware())
 
 function incrementCounter(ctx) {
   ctx.session.counter = ctx.session.counter || 0
@@ -114,14 +236,28 @@ const app = {
     ],
     [
       {
-        text: '📵 Меня просят уйти',
+        text: '🤐 Меня просят уйти',
         callback_data: ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL
       }
     ],
     [
       {
         text: '« Назад',
-        callback_data: ACTION_TYPES.GET_MAIN_MENU
+        callback_data: ACTION_TYPES.BACK
+      }
+    ]
+  ],
+  SEND_VIOLATION_REPORT: [
+    [
+      {
+        text: '🔖 Зафиксировать нарушение',
+        callback_data: ACTION_TYPES.SEND_VIOLATION_REPORT
+      }
+    ],
+    [
+      {
+        text: 'Отменить',
+        callback_data: ACTION_TYPES.CANCEL
       }
     ]
   ],
@@ -132,21 +268,6 @@ const app = {
     }
   })
 }
-
-bot.on('photo', async (ctx) => {
-  console.log('get some photo', ctx)
-
-  const getFullsizePhoto = message => message.photo[message.photo.length - 1].file_id
-
-  const comment = ctx.message.caption
-  const fileId = getFullsizePhoto(ctx.message)
-
-  const photoUrl = await ctx.telegram.getFileLink(fileId)
-  const result = await await api.imageUploader.uploadImageByURL(photoUrl)
-
-  
-  console.log(result)
-})
 
 bot.on('location', async (ctx) => {
   console.log('get some location')
@@ -229,6 +350,7 @@ function botRenderGoToPollingStation(ctx) {
 }
 
 function botRenderMainMenu(ctx) {
+  ctx.answerCbQuery('Вы перешли в главное меню')
   if (!ctx.session.isLocationSet) {
     return botRenderGoToPollingStation(ctx)
   }
@@ -278,10 +400,6 @@ function botRenderInviteFriends(ctx) {
 
 }
 
-function botRenderReportViolationMenu(ctx) {
-  ctx.reply('Заметили нарушение или подозрительное действие? Выберите подходящее из списка. Прикрепите фотографию и оставьте комментарий.', app.renderKeyboard(app.VIOLATIONS_MENU))
-}
-
 function botRenderHelp(ctx) {
   ctx.reply(BOT_TEXT.FAQ_MESSAGE, app.renderKeyboard(app.GO_TO_MAIN_MENU))
 }
@@ -293,6 +411,7 @@ bot.command('aboutverification', botRenderAboutVerification)
 bot.command('verifyme', botRenderVerifyMe)
 bot.command('invitefriends', botRenderInviteFriends)
 bot.command('help', botRenderHelp)
+bot.command('reportviolation', ctx => ctx.scene.enter('reportviolation'))
 
 bot.on('message', async (ctx) => {
   incrementCounter(ctx)
@@ -301,7 +420,6 @@ bot.on('message', async (ctx) => {
    * Handle the case when user
    * sends the location
    */
-
 
   return botRenderMainMenu(ctx)
 })
@@ -315,9 +433,9 @@ async function getLocalElectionsInfo(ctx) {
   } = await api.users.getTelegramUserInfo(ctx.from.id)
 
   return [
-    `👩‍🔬 На ${utils.getTime()} явка\n`,
-    `На вашем участке: ${counterPeopleEnding(pollingStation.electorsCount)}`,
-    `В городе ${city.name}: ${counterPeopleEnding(city.electorsCount)}`
+    `📊 На ${utils.getTime()} MSK явка:\n`,
+    `📈 На вашем участке: ${counterPeopleEnding(pollingStation.electorsCount)}`,
+    `📉 В городе ${city.name}: ${counterPeopleEnding(city.electorsCount)}`
   ].join('\n')
 }
 
@@ -361,18 +479,17 @@ bot.action(ACTION_TYPES.COUNT_10_ELECTORS, async (ctx) => {
   return await handleNewElectorsAttendance(ACTION_TYPES.COUNT_10_ELECTORS, ctx)
 })
 
-bot.action(ACTION_TYPES.REQUEST_UPDATE, (ctx) => {
-  ctx.answerCbQuery(`Обновлено, ${utils.getTime()}`)
+bot.action(ACTION_TYPES.REQUEST_UPDATE, async (ctx) => {
+  if (ctx.session.latestMessageId) {
+    ctx.answerCbQuery(`Обновлено, ${utils.getTime()} MSK`)
+    await ctx.editMessageText(await getLocalElectionsInfo(ctx), app.renderKeyboard(app.MAIN_KEYBOARD))
+  }
 })
 
 bot.action(ACTION_TYPES.GET_MAIN_MENU, botRenderMainMenu)
 bot.action(ACTION_TYPES.SEND_REQUEST_LOCATION, botRequestLocation)
-bot.action(ACTION_TYPES.REPORT_VIOLATION, botRenderReportViolationMenu)
+bot.action(ACTION_TYPES.REPORT_VIOLATION, ctx => ctx.scene.enter('reportviolation'))
 
-// handle violation reports
-bot.action(ACTION_TYPES.VIOLATION_SELECT_CAROUSEL, ctx => {})
-bot.action(ACTION_TYPES.VIOLATION_SELECT_DELIVERY, ctx => {})
-bot.action(ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL, ctx => {})
 
 bot.on('callback_query', (ctx) => {
   console.log(ctx)

@@ -4,6 +4,7 @@ const globalStatistics = require('./globalStatistics')
 const pollingStations = require('./pollingStations')
 const verificationTokens = require('./verificationTokens')
 const cities = require('./cities')
+const reports = require('./reports')
 const imageUploader = require('./imageUploader')
 const geocoding = require('./geocoding')
 
@@ -13,5 +14,6 @@ module.exports.globalStatistics = globalStatistics
 module.exports.pollingStations = pollingStations
 module.exports.verificationTokens = verificationTokens
 module.exports.cities = cities
+module.exports.reports = reports
 module.exports.geocoding = geocoding
 module.exports.imageUploader = imageUploader

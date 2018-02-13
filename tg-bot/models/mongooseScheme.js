@@ -107,9 +107,9 @@ const citySchema = new Schema({
 
 const reportSchema = new Schema({
   type: {type: String},
-  imageUrl: {type: String},
+  photoUrl: {type: String},
   fromUserId: {type: String},
-  comment: {type: String},
+  description: {type: String},
   pollingStationId: {type: String},
   timestamp: {type: Date, default: Date.now}
 })
