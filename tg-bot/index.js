@@ -94,7 +94,13 @@ const app = {
         callback_data: ACTION_TYPES.SEND_REQUEST_LOCATION
       }
     ]
-  ]
+  ],
+  renderKeyboard: keyboard => ({
+    parse_mode: 'markdown',
+    reply_markup: {
+      inline_keyboard: keyboard
+    }
+  })
 }
 
 bot.command('start', async (ctx) => {
@@ -152,24 +158,14 @@ function botRequestLocation(ctx) {
 }
 
 function botRenderGoToPollingStation(ctx) {
-  ctx.reply('👁 Главное меню появится сразу же, как только вы придёте на избирательный участок', {
-    parse_mode: 'markdown',
-    reply_markup: {
-      inline_keyboard: app.I_AM_ON_THE_POLLING_STATION
-    }
-  })
+  ctx.reply(BOT_TEXT.SECOND_STEP, app.renderKeyboard(app.I_AM_ON_THE_POLLING_STATION))
 }
 
 function botRenderMainMenu(ctx) {
   if (!ctx.session.isLocationSet) {
     return botRenderGoToPollingStation(ctx)
   }
-  return ctx.reply(`🙋‍♂️ Вы уже на участке и готовы считать? Как только подходит человек — нажимайте на кнопку.\n 🕵️ Заметили что-то подозрительное? Сообщите об этом нам.`, {
-    parse_mode: 'markdown',
-    reply_markup: {
-      inline_keyboard: app.MAIN_KEYBOARD
-    }
-  })
+  return ctx.reply(BOT_TEXT.THIRD_STEP, app.renderKeyboard(app.MAIN_KEYBOARD))
 }
 
 function botRenderUserProfile(ctx) {
@@ -181,21 +177,11 @@ function botRenderAboutVerification(ctx) {
 }
 
 function botRenderAbout(ctx) {
-  ctx.reply([
-    '👨‍🏫 Привет! Я бот-счётчик и я помогу посчитать реальную явку избирателей на выборах 2018. \n',
-    '🗣 С помощью меня можно производить подсчёт и сообщать о нарушениях и подозрительных вещах вроде каруселей и подвозов в ходе голосования.\n',
-    '🤷‍♀️ Есть вопросы? /help \n',
-    'Приступите к использованию приложения:'
-  ].join('\n'), {
-    parse_mode: 'markdown',
-    reply_markup: {
-      inline_keyboard: app.GO_TO_MAIN_MENU
-    }
-  })
+  ctx.reply(BOT_TEXT.HELLO_MESSAGE, app.renderKeyboard(app.GO_TO_MAIN_MENU))
 }
 
 async function botRenderVerifyMe(ctx) {
-  const [verifyCommand, verificationCode] = ctx.message.text.split(' ')
+  const verificationCode = ctx.message.text.split(' ')[1]
   try {
     const userId = ctx.from.id
     const telegramUser = await api.users.findUserByTelegramId(userId)
@@ -226,22 +212,7 @@ function botRenderInviteFriends(ctx) {
 }
 
 function botRenderHelp(ctx) {
-  ctx.reply([
-    '🆘 FAQ: Наблюдатель-счётчик',
-    'Этот бот создан для того, чтобы получить реальную картину о явке в день выборов и зафиксировать нарушения.\n',
-    '〽️ Мы проанализируем данные в режиме реального времени, а базу данных опубликуем в открытом доступе сразу после окончания голосования\n',
-    '1️⃣ Для того, чтобы начать пользоваться ботом, в день выборов придите на любой избирательный участок в вашем городе и отметьтесь там (команда /setlocation )\n',
-    '2️⃣ Далее перейдите в главное меню (команда /getmainmenu) и считайте всех, кто приходит голосовать на участок.',
-    '3️⃣ Для того, чтобы сообщить о замеченном нарушении или подозрительном событии, перейдите в меню нарушений (команда /getreportsmenu)\n',
-    '4️⃣ Выберите нужное из списка и, если хотите, прикрепите фото (например, фото подвоза)\n',
-    'Остались вопросы? Задайте их разработчику — @fletcherist'
-
-  ].join('\n'), {
-    parse_mode: 'markdown',
-    reply_markup: {
-      inline_keyboard: app.GO_TO_MAIN_MENU
-    }
-  })
+  ctx.reply(BOT_TEXT.FAQ_MESSAGE, app.renderKeyboard(app.GO_TO_MAIN_MENU))
 }
 
 bot.command('setlocation', botRequestLocation)
@@ -287,7 +258,7 @@ async function getLocalElectionsInfo(ctx) {
   return [
     `👩‍🔬 На ${utils.getTime()} явка\n`,
     `На вашем участке: ${pollingStationAttendace} человека`,
-    `В вашем городе: 1253 человека`,
+    `В вашем городе: 1253 человека`
   ].join('\n')
 }
 
@@ -315,12 +286,7 @@ async function handleNewElectorsAttendance(type, ctx) {
   ctx.answerCbQuery(ELECTORS_ATTENDANCE_CALLBACK_REPLY[type])
 
   if (ctx.session.latestMessageId) {
-    await ctx.editMessageText(await getLocalElectionsInfo(ctx), {
-      parse_mode: 'markdown',
-      reply_markup: {
-        inline_keyboard: app.MAIN_KEYBOARD
-      }
-    })
+    await ctx.editMessageText(await getLocalElectionsInfo(ctx), app.renderKeyboard(app.MAIN_KEYBOARD))
   }
 }
 
