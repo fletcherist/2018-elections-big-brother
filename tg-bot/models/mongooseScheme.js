@@ -105,6 +105,15 @@ const citySchema = new Schema({
   }
 })
 
+const reportSchema = new Schema({
+  type: {type: String},
+  imageUrl: {type: String},
+  fromUserId: {type: String},
+  comment: {type: String},
+  pollingStationId: {type: String},
+  timestamp: {type: Date, default: Date.now}
+})
+
 pollingStationSchema.index({ location: '2dsphere' })
 userSchema.index({ location: '2dsphere' })
 electorsAttendanceSchema.index({ location: '2dsphere' })
@@ -116,3 +125,4 @@ mongoose.model('GlobalStatistics', globalStatisticsSchema)
 mongoose.model('PollingStation', pollingStationSchema)
 mongoose.model('VerificationToken', verificationTokenSchema)
 mongoose.model('City', citySchema)
+mongoose.model('Report', reportSchema)
