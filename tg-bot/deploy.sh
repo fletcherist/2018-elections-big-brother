@@ -1,0 +1,1 @@
+(cd ../ && git subtree push --prefix tg-bot heroku master)

@@ -14,10 +14,6 @@ const bot = new Telegraf(config.TELEGRAM_API_KEY)
 
 const utils = require('./utils')
 
-console.log(Markup.inlineKeyboard([
-  Markup.callbackButton('Pepsi', 'Pepsi')
-  ]))
-
 const {
   ELECTORS_ATTENDANCE_CALLBACK_REPLY,
   ELECTORS_ATTENDANCE_VALUES,
@@ -172,6 +168,7 @@ stage.register(reportScene)
 
 bot.use(redisSession.middleware())
 bot.use(stage.middleware())
+bot.use(Telegraf.log())
 
 function incrementCounter(ctx) {
   ctx.session.counter = ctx.session.counter || 0
@@ -184,49 +181,32 @@ function setLatestMessageID(ctx) {
 
 const app = {
   MAIN_KEYBOARD: [
-    [
-      Markup.callbackButton('➕ 1 человек 👤', ACTION_TYPES.COUNT_1_ELECTOR)
-    ],
+    [Markup.callbackButton('➕ 1 человек 👤', ACTION_TYPES.COUNT_1_ELECTOR)],
     [
       Markup.callbackButton('➕ 2 чел. 👫', ACTION_TYPES.COUNT_5_ELECTORS),
       Markup.callbackButton('➕ 5 чел. 👪', ACTION_TYPES.COUNT_10_ELECTORS)
     ],
-    [
-      Markup.callbackButton('Обновить информацию', ACTION_TYPES.REQUEST_UPDATE)
-    ],
-    [
-      Markup.callbackButton('Сообщить о нарушении', ACTION_TYPES.REPORT_VIOLATION)
-    ]
+    [Markup.callbackButton('Обновить информацию', ACTION_TYPES.REQUEST_UPDATE)],
+    [Markup.callbackButton('Сообщить о нарушении', ACTION_TYPES.REPORT_VIOLATION)]
   ],
-  GO_TO_MAIN_MENU: [
-    [
+  GO_TO_MAIN_MENU: Extra.markup(m =>
+    m.inlineKeyboard([
       Markup.callbackButton('В главное меню', ACTION_TYPES.GET_MAIN_MENU)
-    ]
-  ],
+    ])),
   I_AM_ON_THE_POLLING_STATION: [
-    [
-      Markup.callbackButton('Я на месте', ACTION_TYPES.SEND_REQUEST_LOCATION)
-    ]
+    [Markup.callbackButton('Я на месте', ACTION_TYPES.SEND_REQUEST_LOCATION)]
   ],
   VIOLATIONS_MENU: [
     [
       Markup.callbackButton('🎭 Карусель', ACTION_TYPES.VIOLATION_SELECT_CAROUSEL),
       Markup.callbackButton('🚌 Подвоз', ACTION_TYPES.VIOLATION_SELECT_DELIVERY)
     ],
-    [
-      Markup.callbackButton('🤐 Меня просят уйти', ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL)
-    ],
-    [
-      Markup.callbackButton('« Назад', ACTION_TYPES.BACK)
-    ]
+    [Markup.callbackButton('🤐 Меня просят уйти', ACTION_TYPES.VIOLATION_SELECT_ILLEGAL_REMOVAL)],
+    [Markup.callbackButton('« Назад', ACTION_TYPES.BACK)]
   ],
   SEND_VIOLATION_REPORT: [
-    [
-      Markup.callbackButton('🔖 Зафиксировать нарушение', ACTION_TYPES.SEND_VIOLATION_REPORT)
-    ],
-    [
-      Markup.callbackButton('Отменить', ACTION_TYPES.CANCEL)
-    ]
+    [Markup.callbackButton('🔖 Зафиксировать нарушение', ACTION_TYPES.SEND_VIOLATION_REPORT)],
+    [Markup.callbackButton('Отменить', ACTION_TYPES.CANCEL)]
   ],
   renderKeyboard: keyboard => ({
     parse_mode: 'markdown',
@@ -328,7 +308,7 @@ function botRenderAboutVerification(ctx) {
 }
 
 function botRenderAbout(ctx) {
-  ctx.reply(BOT_TEXT.HELLO_MESSAGE, app.renderKeyboard(app.GO_TO_MAIN_MENU))
+  ctx.reply(BOT_TEXT.HELLO_MESSAGE, app.GO_TO_MAIN_MENU)
 }
 
 async function botRenderVerifyMe(ctx) {
@@ -453,8 +433,7 @@ bot.action(ACTION_TYPES.SEND_REQUEST_LOCATION, botRequestLocation)
 bot.action(ACTION_TYPES.REPORT_VIOLATION, ctx => ctx.scene.enter('reportviolation'))
 
 bot.on('callback_query', (ctx) => {
-  console.log(ctx)
-  ctx.answerCbQuery('Засчитано')
+  ctx.answerCbQuery('Такой команды не существует')
 })
 
 bot.startPolling()

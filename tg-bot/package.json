@@ -1,6 +1,6 @@
 {
-  "name": "yandex-music-save-bot",
-  "version": "1.0.0",
+  "name": "Elections Counter Bot",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
