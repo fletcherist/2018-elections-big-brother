@@ -8,6 +8,7 @@ async function createReport({
   telegramUserId,
 }) {
   const user = await findUserByTelegramId(telegramUserId)
+  console.log('createReport', user)
   if (!user) return false
   const report = new Report({
     type: type,

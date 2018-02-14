@@ -91,6 +91,7 @@ reportScene.action(ACTION_TYPES.SEND_VIOLATION_REPORT, async (ctx) => {
     return ctx.editMessageText('❗️ Пожалуйста, в двух словах опишите, что произошло', app.renderKeyboard(app.SEND_VIOLATION_REPORT))
   }
 
+  console.log(ctx)
   const report = await api.reports.createReport({
     type: ctx.session.violationType,
     telegramUserId: ctx.from.id
@@ -111,14 +112,12 @@ async function handleReportViolation(ctx, violationType) {
   ctx.session.violationType = violationType
   ctx.answerCbQuery()
 
-  if (ctx.session.latestMessageId) {
-    await ctx.editMessageText([
-      `Вы выбрали нарушение «${violationsMatch[violationType]}»\n`,
-      '1️⃣ В двух словах опишите в сообщении, что произошло.',
-      '2️⃣ Если сможете, сделайте фотографию и прикрепите её к нарушению.'
-    ].join('\n'),
-    app.renderKeyboard(app.SEND_VIOLATION_REPORT))
-  }
+  await ctx.editMessageText([
+    `Вы выбрали нарушение «${violationsMatch[violationType]}»\n`,
+    '1️⃣ В двух словах опишите в сообщении, что произошло.',
+    '2️⃣ Если сможете, сделайте фотографию и прикрепите её к нарушению.'
+  ].join('\n'),
+  app.renderKeyboard(app.SEND_VIOLATION_REPORT))
 }
 
 const getFullsizePhoto = message => message.photo[message.photo.length - 1].file_id
@@ -189,10 +188,9 @@ const app = {
     [Markup.callbackButton('Обновить информацию', ACTION_TYPES.REQUEST_UPDATE)],
     [Markup.callbackButton('Сообщить о нарушении', ACTION_TYPES.REPORT_VIOLATION)]
   ],
-  GO_TO_MAIN_MENU: Extra.markup(m =>
-    m.inlineKeyboard([
-      Markup.callbackButton('В главное меню', ACTION_TYPES.GET_MAIN_MENU)
-    ])),
+  GO_TO_MAIN_MENU: [
+    [Markup.callbackButton('В главное меню', ACTION_TYPES.GET_MAIN_MENU)]
+  ],
   I_AM_ON_THE_POLLING_STATION: [
     [Markup.callbackButton('Я на месте', ACTION_TYPES.SEND_REQUEST_LOCATION)]
   ],
@@ -205,7 +203,7 @@ const app = {
     [Markup.callbackButton('« Назад', ACTION_TYPES.BACK)]
   ],
   SEND_VIOLATION_REPORT: [
-    [Markup.callbackButton('🔖 Зафиксировать нарушение', ACTION_TYPES.SEND_VIOLATION_REPORT)],
+    [Markup.callbackButton('🔖 Отправить нарушение', ACTION_TYPES.SEND_VIOLATION_REPORT)],
     [Markup.callbackButton('Отменить', ACTION_TYPES.CANCEL)]
   ],
   renderKeyboard: keyboard => ({
@@ -234,11 +232,13 @@ bot.on('location', async (ctx) => {
     ctx.session.isLocationSet = true
     ctx.session.pollingStationId = pollingStationId
 
-    return ctx.reply('Ваш аккаунт успешно привязан к избирательному участку. Теперь вы можете начинать считать явку /getmainmenu')
+    return ctx.reply('Ваш аккаунт успешно привязан к избирательному участку. Теперь вы можете начинать считать явку', app.renderKeyboard(app.GO_TO_MAIN_MENU))
   }
 })
 
 bot.command('start', async (ctx) => {
+  ctx.session = null
+
   const userInfo = ctx.from
 
   /*
@@ -308,7 +308,7 @@ function botRenderAboutVerification(ctx) {
 }
 
 function botRenderAbout(ctx) {
-  ctx.reply(BOT_TEXT.HELLO_MESSAGE, app.GO_TO_MAIN_MENU)
+  ctx.reply(BOT_TEXT.HELLO_MESSAGE, app.renderKeyboard(app.GO_TO_MAIN_MENU))
 }
 
 async function botRenderVerifyMe(ctx) {
@@ -354,6 +354,10 @@ bot.command('verifyme', botRenderVerifyMe)
 bot.command('invitefriends', botRenderInviteFriends)
 bot.command('help', botRenderHelp)
 bot.command('reportviolation', ctx => ctx.scene.enter('reportviolation'))
+bot.command('dropsession', ctx => {
+  ctx.session = null
+  ctx.reply('session was dropped')
+})
 
 bot.on('message', async (ctx) => {
   incrementCounter(ctx)
@@ -404,9 +408,7 @@ async function handleNewElectorsAttendance(type, ctx) {
 
   ctx.answerCbQuery(ELECTORS_ATTENDANCE_CALLBACK_REPLY[type])
 
-  if (ctx.session.latestMessageId) {
-    await ctx.editMessageText(await getLocalElectionsInfo(ctx), app.renderKeyboard(app.MAIN_KEYBOARD))
-  }
+  await ctx.editMessageText(await getLocalElectionsInfo(ctx), app.renderKeyboard(app.MAIN_KEYBOARD))
 }
 
 bot.action(ACTION_TYPES.COUNT_1_ELECTOR, async (ctx) => {
@@ -422,10 +424,8 @@ bot.action(ACTION_TYPES.COUNT_10_ELECTORS, async (ctx) => {
 })
 
 bot.action(ACTION_TYPES.REQUEST_UPDATE, async (ctx) => {
-  if (ctx.session.latestMessageId) {
-    ctx.answerCbQuery(`Обновлено, ${utils.getTime()} MSK`)
-    await ctx.editMessageText(await getLocalElectionsInfo(ctx), app.renderKeyboard(app.MAIN_KEYBOARD))
-  }
+  ctx.answerCbQuery(`Обновлено, ${utils.getTime()} MSK`)
+  await ctx.editMessageText(await getLocalElectionsInfo(ctx), app.renderKeyboard(app.MAIN_KEYBOARD))
 })
 
 bot.action(ACTION_TYPES.GET_MAIN_MENU, botRenderMainMenu)
