@@ -5,6 +5,7 @@ const Scene = require('telegraf/scenes/base')
 const Extra = require('telegraf/extra')
 const Markup = require('telegraf/markup')
 const mongoose = require('mongoose')
+const express = require('express')
 /* Initializing mongoose schemes */
 require('./models/mongooseScheme')
 
@@ -436,5 +437,25 @@ bot.on('callback_query', (ctx) => {
   ctx.answerCbQuery('Такой команды не существует')
 })
 
-bot.startPolling()
 bot.catch(error => console.log(error))
+
+function setWebhook() {
+  console.log('setting webhook...')
+  bot.telegram.setWebhook(`${process.env.URL}/bot${config.TELEGRAM_API_KEY}`)
+    .then(status => console.log(`webhook status: ${status}`))
+}
+
+function removeWebhook() {
+  bot.telegram.deleteWebhook().then(status => console.log(`webhook status: ${status}`))
+}
+
+if (process.env.NODE_ENV === 'production') {
+  const server = express()
+  server.listen(process.env.PORT || 3000, () => console.log(`Server running on port ${process.env.PORT}`))
+  server.use(bot.webhookCallback(`/bot${config.TELEGRAM_API_KEY}`))
+  server.get('/', (req, res) => {
+    res.send('welcome to 2018 elections counter bot')
+  })
+} else {
+  bot.startPolling()
+}
